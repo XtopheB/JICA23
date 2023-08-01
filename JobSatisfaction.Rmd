@@ -1,5 +1,5 @@
 ---
-title: "Visualizing 8 numbers"
+title: "Exercise: How to Visualize 8 Numbers?"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -55,11 +55,7 @@ library(gt)
 
 # Additionnal 
 # devtools::install_github("wilkelab/ungeviz")
-library(ungeviz)
-
-
-
-
+# library(ungeviz)
 
 ```
 
@@ -70,6 +66,7 @@ library(ungeviz)
 Values are the job satisfactions averaged by categories
 
 The data set is the following: 
+
 
 ```{r dataset, echo = FALSE, results=TRUE}
 # create dummy data
