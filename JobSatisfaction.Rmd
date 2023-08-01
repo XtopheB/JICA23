@@ -1,0 +1,185 @@
+---
+title: "Visualizing 8 numbers"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    toc: no
+    keep_md: yes
+    code_folding: hide
+    code_download: true
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+  word_document: default
+  pdf_document:
+    keep_tex: yes
+---
+
+
+```{r setup, include=FALSE}
+# Remember to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = TRUE,
+                       fig.width=7, fig.height=4, 
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+# Palette 
+library(wesanderson)
+```
+
+```{r libraries}
+# library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(gt)
+
+
+#library(kableExtra)
+
+
+# Additionnal 
+# devtools::install_github("wilkelab/ungeviz")
+library(ungeviz)
+
+
+
+
+
+```
+
+# Visualizing job satisfaction{-}
+
+
+> You have to visualize a table with 8 numbers computed from a 10000+ individual survey.
+Values are the job satisfactions averaged by categories
+
+The data set is the following: 
+
+```{r dataset, echo = FALSE, results=TRUE}
+# create dummy data
+MyData <- data.frame(
+  Education = c(rep(c("College"),times = 4),  rep(c("No College"), times=4)),
+  Age = rep(c("Inf 50 yo", "Sup 50 yo"), each=2),
+  Income = rep(c("Inf 60 k$ ", "Sup 60 k$"), times=4), 
+  Satisfaction = c(643, 735, 793, 926, 590, 863, 724, 662)
+  
+)
+
+## Table
+MyData %>% gt()
+
+
+```
+## What are the legitimate questions?  {-}
+
+Since the data is about comparing. What do we want to compare here? 
+
+## What about bars? {-}
+
+
+```{r BarsAge}
+MyData %>%
+  mutate(MixEduInc = interaction(Education, Income, sep = "-")
+         )%>%
+ggplot()+
+    aes(x = Age, y = Satisfaction,  fill = MixEduInc) +
+    geom_bar(stat='identity', position='dodge') +
+    ggtitle(" Job Satisfaction for all categories, by Age")+
+    scale_fill_manual(values = wes_palette("Moonrise2"))+
+    theme_tufte() +
+    theme(legend.position="bottom")
+```
+
+
+```{r BarsAgeFlipped}
+MyData %>%
+  mutate(MixEduInc = interaction(Education, Income, sep = "-")
+         )%>%
+ggplot()+
+    aes(x = Age, y = Satisfaction,  fill = MixEduInc) +
+    geom_bar(stat='identity', position='dodge') +
+    ggtitle(" Job Satisfaction for all categories, by Age")+
+    scale_fill_manual(values = wes_palette("Moonrise2"))+
+    coord_flip()+
+    theme_tufte() +
+    theme(legend.position="bottom")
+```
+
+This new design does not really help comparing 
+
+
+```{r BarsEdu}
+MyData %>%
+  mutate(MixAgeInc = interaction(Age, Income, sep = "-")
+         )%>%
+ggplot()+
+    aes(x = Education, y = Satisfaction,  fill = MixAgeInc) +
+    geom_bar(stat='identity', position='dodge') +
+    ggtitle(" Job Satisfaction for all categories, by Education")+
+    scale_fill_manual(values = wes_palette("Royal1"))+
+    theme_tufte() +
+    theme(legend.position="bottom")
+```
+
+
+```{r BarsInc}
+MyData %>%
+  mutate(MixEduAge = interaction(Education, Age, sep = "-")
+         )%>%
+ggplot()+
+    aes(x = Income, y = Satisfaction,  fill = MixEduAge) +
+    geom_bar(stat='identity', position='dodge') +
+    ggtitle(" Job Satisfaction for all categories, by Income")+
+    scale_fill_manual(values =  wes_palette("Royal2"))+
+    theme_tufte() +
+    theme(legend.position="bottom")
+```
+
+
+
+
+
+```{r LineAge}
+library(directlabels)
+MyData %>%
+  mutate(MixEduInc = interaction(Education, Income, sep = "-")
+         )%>%
+ggplot()+
+    aes(x = Age, y = Satisfaction,  color = MixEduInc) +
+    geom_line(aes(group = MixEduInc), size =1.5) +
+    ggtitle(" Job Satisfaction for all categories, by Age")+
+    scale_color_manual(values = wes_palette("Moonrise2"))+
+    theme_tufte() +
+    theme(legend.position="none")+
+   geom_dl(aes(label = MixEduInc), 
+           method = list(dl.trans(x = x + 0.2),
+                         dl.combine("last.points"))) 
+
+```
+
+
+
+
+
+
+
+```{r}
+knitr::knit_exit()
+```
+
