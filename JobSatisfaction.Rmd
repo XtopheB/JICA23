@@ -50,9 +50,6 @@ library(knitr)
 library(gt)
 
 
-#library(kableExtra)
-
-
 # Additionnal 
 # devtools::install_github("wilkelab/ungeviz")
 # library(ungeviz)
@@ -169,9 +166,6 @@ ggplot()+
                          dl.combine("last.points"))) 
 
 ```
-
-
-
 
 
 
