@@ -1,0 +1,179 @@
+---
+title: "Parallel Coordinates with R"
+subtitle: "With Plotly"
+author: 
+  - Christophe Bontemps (SIAP)
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    keep_md: yes
+    code_folding: show
+    fig_width: 6.5
+    fig_height: 4
+  pdf_document:
+    df_print: kable
+    toc: no
+    keep_tex: yes
+    fig_width: 6.5
+    fig_height: 4
+---
+
+```{r Knitr_Global_Options, include=FALSE, cache=FALSE}
+library(knitr)
+opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE,
+               autodep = TRUE, tidy = FALSE)
+#opts_chunk$set(cache.rebuild=TRUE) 
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+```
+
+`r if(knitr:::pandoc_to() == "latex") {paste("\\large")}` 
+
+
+```{r packages, include=FALSE, echo = FALSE}
+# Data management packages
+library(jtools)
+library(forcats)
+library(tidyverse)
+
+# Plotting packages
+library(ggplot2)
+library(RColorBrewer)
+library(plotly)
+
+
+# Nice presentation of results
+library(papeR)
+library(xtable)
+library(kableExtra)
+
+# Tables 
+library(modelsummary)
+library(gt) 
+library(gtsummary)
+
+
+```
+
+# Introduction
+This course is inspired by [this plotly web page](https://plotly.com/r/parallel-coordinates-plot/)
+
+Creating parallel coordinates plots (PCP)  is **quite easy** if
+- One use the right package (here *plotly*)
+- The data are well structured
+
+For example the famous *Iris* data set is well structured with observations in rows, and some variables as column. 
+
+```{r Iris}
+library(plotly)
+
+IrisFlowers <- read.csv("https://raw.githubusercontent.com/bcdunbar/datasets/master/iris.csv")
+```
+
+Let's have a look on the data structure
+
+```{r}
+IrisFlowers %>% head()
+```
+ And in details, since all variables are numeric, we can see the number of observation,and think of *species_id* as a visual variable for colors. 
+ 
+```{r}
+datasummary_skim(IrisFlowers, type = "numeric")
+```
+ 
+### A simple PCP
+
+```{r Data}
+fig <- IrisFlowers %>% plot_ly(type = 'parcoords',
+          line = list(color = ~species_id,
+                      colorscale = list(c(0,'red'),c(0.5,'green'),c(1,'blue'))),
+          dimensions = list(
+            list(range = c(2,4.5),
+                 label = 'Sepal Width', values = ~sepal_width),
+            list(range = c(4,8),
+                 constraintrange = c(5,6),
+                 label = 'Sepal Length', values = ~sepal_length),
+            list(range = c(0,2.5),
+                 label = 'Petal Width', values = ~petal_width),
+            list(range = c(1,7),
+                 label = 'Petal Length', values = ~petal_length)
+            )
+          ) %>%
+        layout(title = 'A simple Parallel Coordinates Plot')
+
+fig
+
+```
+
+
+### More advanced for more complex data 
+Let's have a look at some SDGs for many countries in the world
+
+```{r}
+library(plotly)
+Mydata <- read.csv("Data/SDGperRegion.csv")
+```
+
+
+We have here `r nrow(Mydata)` observations (rows) and `r ncol(Mydata)` variables. 
+ and 
+```{r}
+head(Mydata)
+```
+
+
+
+```{r}
+Mydata <- Mydata %>%
+  mutate(region = as.factor(region_code))
+
+
+fig <- Mydata %>%
+  plot_ly(width = 1000, height = 600) 
+fig <- fig %>% add_trace(type = 'parcoords',
+          line = list(color = ~region_code,
+                       colorscale = "geyser", 
+                     # colorscale = list(c(0,'red'),c(0.25,'pink'),
+                    #                  c(0.5,'green'),c(0.75,'black'), c(1,'blue')), 
+                     showscale = FALSE),
+          dimensions = list(
+            list(range = c(~min(population),~max(population)),
+                 label = 'Population', values = ~population),
+            list(range = c(~min(gross_national_income_atlas_method),
+                           ~max(gross_national_income_atlas_method  )),
+                 label = 'GNI', values = ~gross_national_income_atlas_method),
+           list(range = c(~min(maternal_mortality_ratio   ),~max(maternal_mortality_ratio   )),
+                 label = 'Maternal Mortality ratio', values = ~maternal_mortality_ratio   ), 
+           list(range = c(~min( X.Tuberculosis..per.100k. ),
+                           ~max( X.Tuberculosis..per.100k.   )),
+                 label = 'Tuberculosis', values = ~ X.Tuberculosis..per.100k. ),
+            list(range = c(~min(access_to_electricity),
+                           ~max(access_to_electricity  )),
+                 label = 'Electricity', values = ~access_to_electricity),
+            list(range = c(~min(primary_completion_rate ),
+                           ~max(primary_completion_rate   )),
+                 label = 'Education ', values = ~primary_completion_rate ),
+            list(range = c(~min(internet_use ),
+                           ~max(internet_use   )),
+                 label = 'internet_use ', values = ~internet_use )
+           
+            )
+          ) %>%
+        layout(title = 'A more complex Parallel Coordinates Plot')
+
+
+fig
+
+```
+
+Obviously, there is a lot to optimize here, in particular the choice of the variables, the order of the axis, the colors, etc... But one can see how many dilensions can be visualized there. 
+
+
+
+
+
+
+
