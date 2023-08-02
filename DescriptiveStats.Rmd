@@ -21,14 +21,10 @@ output:
 
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 
 ```{r Knitr_Global_Options, include=FALSE, cache=FALSE}
 library(knitr)
-opts_chunk$set(warning = FALSE, message = FALSE, 
+opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE,
                autodep = TRUE, tidy = FALSE)
 #opts_chunk$set(cache.rebuild=TRUE) 
 
@@ -60,7 +56,6 @@ library(kableExtra)
 library(modelsummary)
 library(gt) 
 library(gtsummary)
-
 
 ```
 

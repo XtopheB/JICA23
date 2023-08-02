@@ -50,10 +50,6 @@ library(knitr)
 library(gt)
 
 
-# Additionnal 
-# devtools::install_github("wilkelab/ungeviz")
-# library(ungeviz)
-
 ```
 
 # Visualizing job satisfaction{-}
