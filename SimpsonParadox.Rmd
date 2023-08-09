@@ -1,0 +1,350 @@
+---
+title: "Exercise: How to Visualize 8 Numbers?"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    toc: no
+    keep_md: yes
+    code_folding: hide
+    code_download: true
+    highlight: tango
+    number_sections: yes
+    theme: cerulean
+  word_document: default
+  pdf_document:
+    keep_tex: yes
+---
+
+
+```{r setup, include=FALSE}
+# Remember to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results = TRUE, echo = TRUE,
+                       fig.width=7, fig.height=4, 
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+
+```{r packages, include=FALSE, echo = FALSE}
+# Data management packages
+library(jtools)
+library(forcats)
+library(tidyverse)
+
+# Plotting packages
+library(ggplot2)
+library(RColorBrewer)
+library(plotly)
+
+
+# Nice presentation of results
+library(papeR)
+library(xtable)
+library(kableExtra)
+
+# Tables 
+library(modelsummary)
+library(gt) 
+library(gtsummary)
+library(skimr)
+
+```
+
+Let’s consider an example using observational data on average teacher salaries (in 2010) and average total SAT scores for each of the 50 United States. The SAT (*Scholastic Aptitude Test*) is a high-stakes exam used for entry into college. 
+
+> Are higher teacher salaries associated with better outcomes on the test at the state level? 
+
+If so, should we adjust salaries to improve test performance? 
+
+Let's look at the relation between SAT's scores (Y) and  Teachers Slaries (X). We can do a simple scatterplot of these data. We also fit a linear regression model.
+
+
+```{r}
+# From https://mdsr-book.github.io/mdsr3e/09-foundations.html#sec-confound
+ load(file = 'data/SAT_2010.rda')
+
+
+SAT_2010 <- SAT_2010 |>
+  mutate(Salary = salary/1000)
+
+SAT_plot <- ggplot(data = SAT_2010, aes(x = Salary, y = total)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") + 
+  ylab("Average total score on the SAT") + 
+  xlab("Average teacher salary (thousands of USD)") +
+  theme_minimal()
+SAT_plot
+```
+The regression associated  shows that the coeficient is clearly negative and significantly different from 0. 
+
+```{r}
+SAT_mod1 <- lm(total ~ Salary, data = SAT_2010)
+broom::tidy(SAT_mod1)
+```
+```{r}
+SAT_2010 |>
+  skim(sat_pct)
+```
+
+The median is at  **`r median(SAT_2010$sat_pct)`**, so let's split the sample into two groups: high and low percentage of student who take the SAT. 
+
+```{r}
+# New variable created SAT_grp
+
+SAT_2010 <- SAT_2010 |>
+  mutate(SAT_grp = ifelse(sat_pct <= 27, "Low", "High"))
+
+SAT_2010 |>
+  group_by(SAT_grp) |>
+  count()
+```
+
+```{r}
+SAT_plot %+% SAT_2010 + 
+  aes(color = SAT_grp) + 
+  scale_color_brewer("% taking\nthe SAT", palette = "Set1")
+
+```
+
+
+```{r}
+SAT_2010 |>
+  group_by(SAT_grp) |>
+  group_modify(~broom::tidy(lm(total ~ Salary, data = .x)))
+```
+
+
+```{r}
+SAT_mod2 <- lm(total ~ Salary + sat_pct, data = SAT_2010)
+broom::tidy(SAT_mod2)
+```
+
+
+
+```{r EXIT}
+knitr::knit_exit()
+```
+
+
+
+
+
+
+
+
+
+```{r}
+# Generating data with Simpson's paradox
+set.seed(2512)
+
+# Creating a dataset with three variables: X, Y, and Group
+n <- 300
+x <- rnorm(n, mean = 20, sd = 5)
+y <- 3 * x + rnorm(n, mean = 0, sd = 10)
+group <- factor(rep(1:3, each = n/3))
+
+# Introducing Simpson's paradox
+grouped_x <- split(x, group)
+grouped_y <- split(y, group)
+
+# Increasing the correlation within each subgroup
+grouped_y[[1]] <- grouped_y[[1]] - 3 * grouped_x[[1]]* rnorm(n/3, mean = 1, sd = 3)
+grouped_y[[2]] <- grouped_y[[2]] + 3 * grouped_x[[2]]* rnorm(n/3, mean = 1.2, sd = 3)
+grouped_y[[3]] <- grouped_y[[3]] - 3 * grouped_x[[3]]* rnorm(n/3, mean = 1.5, sd = 3)
+
+# Removing one data point from each group to have consistent number of rows
+grouped_x <- lapply(grouped_x, function(x) x[-sample(length(x), 1)])
+grouped_y <- lapply(grouped_y, function(y) y[-sample(length(y), 1)])
+
+x <- unlist(grouped_x)
+y <- unlist(grouped_y)
+
+# Creating the final dataset
+data <- data.frame(X = x, Y = y, Group = group[1:297])
+
+```
+
+# Stat des
+```{r}
+# Visualization of the paradox with regression lines and small multiples
+# Plot with regression lines
+ggplot(data, aes(x = X, y = Y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox",
+       x = "X", y = "Y")
+```
+
+
+```{r}
+# Visualization of the paradox with regression lines and small multiples
+# Plot with regression lines
+ggplot(data, aes(x = X, y = Y, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox",
+       x = "X", y = "Y")
+```
+
+```{r}
+# Plot with small multiples
+ggplot(data, aes(x = X, y = Y, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  facet_wrap(~Group) +
+  labs(title = "Simpson's Paradox: Small Multiples",
+       x = "X", y = "Y")
+
+```
+
+
+```{r}
+# Generating data with Simpson's paradox in another way
+set.seed(42)
+
+# Creating a dataset with three variables: University, Applicants, and Admitted
+university <- c(rep("University A", 100), rep("University B", 200))
+applicants <- c(500, 200, 400, 100, 200, 150)
+admitted <- c(250, 180, 350, 90, 100, 120)
+
+# Creating the final dataset
+data_another <- data.frame(University = university, Applicants = applicants, Admitted = admitted)
+
+```
+
+
+```{r}
+# Calculate admission rates for each university
+data_another$Admission_Rate <- data_another$Admitted / data_another$Applicants * 100
+data_another
+
+```
+
+```{r}
+# Adding gender information to the dataset
+gender <- c(rep("Male", 200), rep("Female", 100))
+data_another$Gender <- gender
+
+# Calculate admission rates for each university and gender
+admission_rates_by_gender <- aggregate(Admitted ~ University + Gender, data_another, sum)
+applicants_by_gender <- aggregate(Applicants ~ University + Gender, data_another, sum)
+data_another_gender <- merge(admission_rates_by_gender, applicants_by_gender, by = c("University", "Gender"))
+
+data_another_gender$Admission_Rate_Gender <- data_another_gender$Admitted / data_another_gender$Applicants * 100
+data_another_gender
+
+```
+
+## 2 
+
+```{r}
+# Generating data with Simpson's paradox in another way
+set.seed(42)
+
+# Creating a dataset with three variables: University, Applicants, and Admitted
+university <- c(rep("University A", 100), rep("University B", 200))
+applicants <- c(500, 200, 400, 100, 200, 150)
+admitted <- c(250, 180, 350, 90, 100, 120)
+
+# Creating the final dataset
+data_another <- data.frame(University = university, Applicants = applicants, Admitted = admitted)
+
+```
+
+
+
+```{r}
+# Visualization of the paradox with regression lines
+ggplot(data_another, aes(x = Applicants, y = Admission_Rate, color = University)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox: Admission Rates by University",
+       x = "Number of Applicants", y = "Admission Rate (%)") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+####  New
+
+```{r}
+# Generating data with Simpson's paradox
+set.seed(42)
+
+# Creating a dataset with three variables: X, Y, and Group
+n <- 100
+x <- c(rnorm(n, mean = 10, sd = 2), rnorm(n, mean = 30, sd = 5))
+y <- c(2 * x[1:n] + rnorm(n, mean = 0, sd = 2), 3 * x[(n+1):(2*n)] + rnorm(n, mean = 0, sd = 5))
+group <- factor(rep(1:2, each = n))
+
+# Creating the final dataset
+data_simpson <- data.frame(X = x, Y = y, Group = group)
+
+```
+
+```{r}
+# Visualization of the paradox with regression lines
+ggplot(data_simpson, aes(x = X, y = Y, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox: X vs. Y",
+       x = "X", y = "Y") +
+  theme_minimal()
+
+```
+
+```{r}
+# Visualization of the combined data with regression line
+ggplot(data_simpson, aes(x = X, y = Y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox: Combined Data",
+       x = "X", y = "Y") +
+  theme_minimal()
+
+```
+
+```{r}
+# Generating data with Simpson's paradox
+set.seed(42)
+
+# Creating a dataset with three variables: X, Y, and Group
+n <- 100
+x <- c(rnorm(n, mean = 10, sd = 2), rnorm(n, mean = 30, sd = 5))
+y <- c(2 * x[1:n] + rnorm(n, mean = 0, sd = 2), 3 * x[(n+1):(2*n)] + rnorm(n, mean = 0, sd = 5))
+group <- factor(rep(1:2, each = n))
+
+# Creating the final dataset
+data_simpson <- data.frame(X = x, Y = y, Group = group)
+
+```
+
+
+```{r}
+# Visualization of the paradox with regression lines
+ggplot(data_simpson, aes(x = X, y = Y, color = Group)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Simpson's Paradox: X vs. Y",
+       x = "X", y = "Y") +
+  theme_minimal()
+
+```
+
