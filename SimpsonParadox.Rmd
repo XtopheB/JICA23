@@ -3,9 +3,6 @@ title: "Simpson Paradox Illustrated"
 author: "Christophe Bontemps (UN SIAP)^[ Based on the work by Benjamin S. Baumer, Daniel T. Kaplan, and Nicholas J. Horton (Modern Data Science with R - 2023)]"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  word_document: default
-  pdf_document:
-    keep_tex: yes
   html_document:
     df_print: paged
     toc: no
@@ -15,6 +12,9 @@ output:
     highlight: tango
     number_sections: no
     theme: cerulean
+  pdf_document:
+    keep_tex: yes
+  word_document: default
 ---
 
 `r if(knitr:::pandoc_to() == "latex") {paste("\\large")}` 
@@ -106,26 +106,43 @@ Looking at the data, we may find interesting that there is quite a discrepancy i
 
 ```{r}
 SAT_2010 %>%
-   ggplot(aes(sat_pct)) + 
-  geom_histogram() + 
+  ggplot() + 
+  aes(x=sat_pct) +
+  geom_histogram(fill=SIAP.color) + 
+
   xlab("Average percentage of students who take the SAT in each state ") +
   theme_minimal()
 
 
 ```
 
-Let us create a dummy variable to differentiate the two groups of states according to the participation rate in SAT.  The median participation rate  is at  **`r median(SAT_2010$sat_pct)`**, so let's split the sample into two groups: *high* and *low* rates of participation and capture this information in the variable *sat_grp*. 
+Let us create a dummy variable to differentiate the two groups of states according to the participation rate in SAT.  The median participation rate  is at  **`r median(SAT_2010$sat_pct)`**, but th histogram shows a clear-cut separation anywhere between 30% and 45%. So let's split the sample into two groups: *high* and *low* rates of participation and capture this information in the variable *sat_grp*. 
 
 ```{r}
 # New variable created sat_grp
 
 SAT_2010 <- SAT_2010 |>
-  mutate(sat_grp = ifelse(sat_pct <= 27, "Low", "High"))
+  mutate(sat_grp = ifelse(sat_pct < 30, "Low", "High"))
 
 SAT_2010 |>
   group_by(sat_grp) |>
   count()
 ```
+
+```{r}
+SAT_2010 %>%
+  ggplot() + 
+  aes(x=sat_pct, fill = sat_grp) +
+  geom_histogram( ) + 
+  scale_fill_manual(values = c("pink", SIAP.color)) +
+  xlab("Average percentage of students who take the SAT in each state ") +
+  theme_minimal()
+
+
+```
+
+
+
 
 ##  Taking the rate of participation into account. 
 
@@ -134,7 +151,9 @@ There are various ways to take into account the presence of two groups. Let's si
 ```{r}
 SAT_plot %+% SAT_2010 + 
   aes(color = sat_grp) + 
-  scale_color_brewer("% taking\nthe SAT", palette = "Set1")
+  scale_fill_manual(values = c("pink", SIAP.color)) 
+
+# scale_color_brewer("% taking\nthe SAT", palette = "Set1")
 
 ```
 
