@@ -1,8 +1,11 @@
 ---
-title: "Exercise: How to Visualize 8 Numbers?"
-author: "Christophe Bontemps (UN SIAP)"
+title: "Simpson Paradox Illustrated"
+author: "Christophe Bontemps (UN SIAP)^[ Based on the work by Benjamin S. Baumer, Daniel T. Kaplan, and Nicholas J. Horton (Modern Data Science with R - 2023)]"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  word_document: default
+  pdf_document:
+    keep_tex: yes
   html_document:
     df_print: paged
     toc: no
@@ -10,13 +13,11 @@ output:
     code_folding: hide
     code_download: true
     highlight: tango
-    number_sections: yes
+    number_sections: no
     theme: cerulean
-  word_document: default
-  pdf_document:
-    keep_tex: yes
 ---
 
+`r if(knitr:::pandoc_to() == "latex") {paste("\\large")}` 
 
 ```{r setup, include=FALSE}
 # Remember to disable png for Word export...
@@ -63,9 +64,11 @@ library(skimr)
 
 ```
 
-Let’s consider an example using observational data on average teacher salaries (in 2010) and average total SAT scores for each of the 50 United States. The SAT (*Scholastic Aptitude Test*) is a high-stakes exam used for entry into college. 
+## A classical analysis
 
-> Are higher teacher salaries associated with better outcomes on the test at the state level? 
+Let’s use real data (2010) and analyze the relation between the average teacher salaries and the  average total SAT scores for each of the 50 United States. The SAT (*Scholastic Aptitude Test*) is a high-stakes exam used for entry into college in the US. The data were collected by Baumer *et al.* (2021) and available on their [Github page](https://github.com/mdsr-book/mdsr/tree/master/data). 
+
+> Are higher teacher salaries associated with better outcomes on the SAT test? 
 
 If so, should we adjust salaries to improve test performance? 
 
@@ -88,53 +91,93 @@ SAT_plot <- ggplot(data = SAT_2010, aes(x = Salary, y = total)) +
   theme_minimal()
 SAT_plot
 ```
-The regression associated  shows that the coeficient is clearly negative and significantly different from 0. 
+
+The regression associated  shows that the coeficient is clearly **negative** and significantly different from 0. 
 
 ```{r}
 SAT_mod1 <- lm(total ~ Salary, data = SAT_2010)
 broom::tidy(SAT_mod1)
 ```
+> Are higher teacher less paid in states where the STA is higher?  Or...
+
+###  Is there a factor not taken into account in this analysis? 
+
+Looking at the data, we may find interesting that there is quite a discrepancy in the *Average percentage of students who take the SAT in each state*, as the histogram of the variable *sat_pct* shows clearly. 
+
 ```{r}
-SAT_2010 |>
-  skim(sat_pct)
+SAT_2010 %>%
+   ggplot(aes(sat_pct)) + 
+  geom_histogram() + 
+  xlab("Average percentage of students who take the SAT in each state ") +
+  theme_minimal()
+
+
 ```
 
-The median is at  **`r median(SAT_2010$sat_pct)`**, so let's split the sample into two groups: high and low percentage of student who take the SAT. 
+Let us create a dummy variable to differentiate the two groups of states according to the participation rate in SAT.  The median participation rate  is at  **`r median(SAT_2010$sat_pct)`**, so let's split the sample into two groups: *high* and *low* rates of participation and capture this information in the variable *sat_grp*. 
 
 ```{r}
-# New variable created SAT_grp
+# New variable created sat_grp
 
 SAT_2010 <- SAT_2010 |>
-  mutate(SAT_grp = ifelse(sat_pct <= 27, "Low", "High"))
+  mutate(sat_grp = ifelse(sat_pct <= 27, "Low", "High"))
 
 SAT_2010 |>
-  group_by(SAT_grp) |>
+  group_by(sat_grp) |>
   count()
 ```
 
+##  Taking the rate of participation into account. 
+
+There are various ways to take into account the presence of two groups. Let's simply visualize the effect by adjusting a regression line for each the two groups.  
+
 ```{r}
 SAT_plot %+% SAT_2010 + 
-  aes(color = SAT_grp) + 
+  aes(color = sat_grp) + 
   scale_color_brewer("% taking\nthe SAT", palette = "Set1")
 
 ```
 
+> **Within** each  groups, average teacher salary is **positively** associated with average SAT score! 
+
+
+Let us look at the linear regressions for each group independently.  
+
 
 ```{r}
 SAT_2010 |>
-  group_by(SAT_grp) |>
+  group_by(sat_grp) |>
   group_modify(~broom::tidy(lm(total ~ Salary, data = .x)))
 ```
 
+
+One now understands the previous analysis, where both highly participating states were analysed together with states experiencing a lower rate of participation. 
+
+This paradox -  with a relation that change sign depending on how we treat the data and whether or not one has included an additional explanatory variable - is called **Simpson’s paradox**.  
+
+If we compute the linear regression taking into account the high and low rates of SAT participation - *as we should have done* - one can confirm the positive association between average teachers salary and average SAT scores:
 
 ```{r}
 SAT_mod2 <- lm(total ~ Salary + sat_pct, data = SAT_2010)
 broom::tidy(SAT_mod2)
 ```
 
+> The Simpson paradox  is very common and results from a bad understanding of the data set and the omission of important explanatory factors. 
+
+### Morality
+
+Be careful in your analysis and ask yourself: 
+
+- What is the expected sign of a relation? (before plotting/computing)
+- Which variables play or could play a role in the analysis?
+- Is there something wrong in what I am doing/viewing?
+
+The Simpson paradox has been documented in various publications and in [Wikipedia](https://en.wikipedia.org/wiki/Simpson%27s_paradox)
+
+<img src="assets/Simpsons.png" alt="Simpson's" />
 
 
-```{r EXIT}
+```{r EXIT, echo=FALSE}
 knitr::knit_exit()
 ```
 
