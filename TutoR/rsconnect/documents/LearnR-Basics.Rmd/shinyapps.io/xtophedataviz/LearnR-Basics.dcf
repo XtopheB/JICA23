@@ -1,0 +1,13 @@
+name: LearnR-Basics
+title: LearnR-Basics
+username:
+account: xtophedataviz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9606074
+bundleId: 7567921
+url: https://xtophedataviz.shinyapps.io/LearnR-Basics/
+when: 1692074340.79281
+lastSyncTime: 1692074340.79282
+asMultiple: FALSE
+asStatic: FALSE
