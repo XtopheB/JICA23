@@ -6,7 +6,7 @@ output:
   html_document:
     df_print: paged
     toc: no
-    keep_md: yes
+    keep_md: no
     code_folding: hide
     code_download: true
     highlight: tango
