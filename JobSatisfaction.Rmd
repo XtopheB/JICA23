@@ -3,6 +3,9 @@ title: "Exercise: How to Visualize 8 Numbers?"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  pdf_document:
+    keep_tex: yes
+  word_document: default
   html_document:
     df_print: paged
     toc: no
@@ -12,9 +15,6 @@ output:
     highlight: tango
     number_sections: yes
     theme: cerulean
-  word_document: default
-  pdf_document:
-    keep_tex: yes
 ---
 
 
