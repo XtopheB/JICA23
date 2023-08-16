@@ -1,16 +1,19 @@
 ---
 title: "Descriptive Statistics with R"
-subtitle: "(*Don't panic*)"
-author: 
-  - Christophe Bontemps SIAP^[*This document uses teaching materials developped by Pascal Lavergne* (*Toulouse School of Economics*)]
+author: Christophe Bontemps SIAP^[*This document uses teaching materials developped
+  by Pascal Lavergne* (*Toulouse School of Economics*)]
+subtitle: (*Don't panic*)
 output:
   html_document:
     df_print: paged
+    always_allow_html: true
     toc: yes
-    keep_md: yes
+    keep_md: no
     code_folding: show
     fig_width: 6.5
     fig_height: 4
+  word_document:
+    toc: yes
   pdf_document:
     df_print: kable
     toc: no
@@ -361,6 +364,7 @@ effect_plot(lmFood, data = MyData,
 knitr::knit_exit()
 ```
 
+########################################## 
 
 ## Polynomial Models
 
