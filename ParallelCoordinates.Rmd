@@ -1,14 +1,16 @@
 ---
 title: "Parallel Coordinates with R"
-subtitle: "With Plotly"
-author: 
-  - Christophe Bontemps (SIAP)
+author: "Christophe Bontemps (SIAP)"
+subtitle: With Plotly
 output:
+  word_document:
+    toc: yes
   html_document:
     df_print: paged
     toc: yes
     keep_md: yes
     code_folding: show
+    code_download: yes
     fig_width: 6.5
     fig_height: 4
   pdf_document:
