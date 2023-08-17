@@ -77,6 +77,15 @@ The *sf* (Simple Features) package is the successor to the *sp* package. It allo
 ```{r Data}
 library(sf)
 
+# # The files are also on SIAP's server. You can use  the following approach (uncomment below) : 
+# ## - Define the file location 
+# my_temp_dir <- getwd()
+# ## -  download the file 
+# download.file("https://www.unsiap.or.jp/on_line/2023/TAPOS/Data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp", destfile = file.path(my_temp_dir,"ne_10m_admin_0_countries.shp"))
+# 
+# ## - Read and store the file in shapefile object
+# my_sf2 <- st_read(paste0(my_temp_dir,"/ne_10m_admin_0_countries.shp"))
+
 #loading Shapefiles
 my_sf <- st_read("Data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
 
