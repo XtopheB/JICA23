@@ -23,7 +23,7 @@ SIAP.color <- "#0385a8"
 # Data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO
 # Only countries with letters A-C selected to avoid uneccessary heavy files
 
-SDGdata1<- readxl::read_xlsx("SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
+SDGdata1<- readxl::read_xlsx("data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
 
 SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
 SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
@@ -47,19 +47,22 @@ MyDataNumCatAvg <- MyDataNumCat %>%
 
 
 
-# Define UI for application that draws a histogram
+# Define UI for application that draws the points
 ui <- fluidPage(
+  # Application title
+  titlePanel("How jitter helps visualizing univariate data"),
+  tags$h4("JICA-TAPOS Course"),
+  tags$h5("Christophe Bontemps (SIAP)"),
+  tags$h5("August- December 2023"),
 
-    # Application title
-    titlePanel("How jitter helps visualizing univariate data"),
-
-    # Sidebar with a slider input for number of bins 
+  # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
             sliderInput("Jitter",
                         "Jitter height:",
                         min = 0,
                         max = 0.2,
+                        step = 0.02,
                         value = 0, 
                         animate = TRUE)
         ),
