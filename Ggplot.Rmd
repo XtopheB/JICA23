@@ -1,0 +1,462 @@
+---
+title: "An introduction to ggplot2"
+author: "Christophe Bontemps (UN SIAP)"
+output:
+  html_document:
+    code_folding: hide
+    code_download: true
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+  html_notebook: default
+  word_document: default
+  pdf_document:
+    keep_tex: yes
+---
+
+
+```{r setup, include=FALSE, echo=FALSE}
+library(knitr)
+
+# Remeber to disable png for Word export...
+# To Show code : Echo = TRUE
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =TRUE, echo = TRUE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries, echo = FALSE}
+# Working with data
+library(forcats)
+library(readxl)
+#library(tidyverse)
+library(dplyr)
+
+# Graphics
+library(ggplot2)
+library(ggthemes)
+library(viridis)
+
+# Tables 
+library(modelsummary)
+library(gt) 
+library(gtsummary)
+library(kableExtra)
+
+```
+
+## Data sets {-}
+
+We use data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO. We merged by country two indicators: 
+
+- Poverty index  (Indicator 1.1.1):  "*Proportion of population below poverty line*"
+- Maternal mortality ratio (Indicator 3.1.1): "*Maternal mortality ratio (per_100000 live Birth*"
+
+We selected only countries with letters A-C to avoid unnecessary heavy file.  
+
+```{r SDGData, echo = FALSE}
+
+AllData<- read.table(file ="https://www.unsiap.or.jp/on_line/2023/TAPOS/Data/DG-Example-M4.csv")
+WV<-  read.table(file ="https://www.unsiap.or.jp/on_line/2023/TAPOS/Data/M4-Economy-Data.csv")
+
+Temp <- WV %>%
+  dplyr::select(country, Population.millions2019)
+
+AllData<- merge(AllData, Temp , by.x = "GeoAreaName", by.y = "country")
+
+Maternal.label <- "Maternal Mortality Indic. (3.1.1)"
+Poverty.label <- "Poverty Indic. (1.1.1)"
+
+# Cleaning
+AllData <- AllData %>%
+  mutate(
+   Period = case_when(
+        (TimePeriod <= 2004)  ~ "2000-2004",
+        (TimePeriod > 2004)&(TimePeriod <= 2008)~ "2005-2008",
+        (TimePeriod > 2008)&(TimePeriod <= 2012) ~  "2009-2012" ,
+         (TimePeriod > 2012) ~  "2013-2017" ), 
+   Age = as.factor(Age),
+   Population = Population.millions2019, 
+   Country = GeoAreaName
+  ) %>%
+  dplyr::select(
+    Poverty, Maternal, Population, Age, Country, Period
+  )
+
+# write.table(AllData, file ="Data/M4-ggplotData.csv")
+# file is also saved on SIAP's server
+```
+
+
+```{r}
+# file was saved on SIAP's server
+ Mydata <- read.table(file ="https://www.unsiap.or.jp/on_line/2023/TAPOS/Data/M4-ggplotData.csv")
+
+# Age group  is has to be a factor
+Mydata <- Mydata %>%  mutate( Age = as.factor(Age))
+```
+# A first look at the data set
+
+```{r}
+head(Mydata)
+```
+### Summary statistics (numeric variables only)
+
+```{r}
+## Table
+datasummary_skim(Mydata)
+```
+Now we know that we have **`r nrow(Mydata)`** observations and we know the range of each numeric variable. 
+
+# Constructing a scatter plot, step-by-step
+
+At the begining there is nothing but a frame
+```{r Scatter00}
+ggplot(Mydata)
+```
+
+Then the *aes()*  defines what variables we will be using (pay attention to the limits of the box)
+
+```{r Scatter0}
+ggplot(Mydata) +
+aes(x=Poverty, y= Maternal)
+```
+
+Now, we can decide of the type of graphic we are plotting, with the *geom*. There are numerous "geoms" avalaible. 
+
+```{r Scatter}
+ggplot(Mydata) +
+aes(x=Poverty, y= Maternal) +
+geom_point() 
+```
+
+Title, subtitles, lables, etc. can be added as well as many other things
+
+```{r Scatter2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot")
+```
+
+## Adding other aesthetic components
+
+
+```{r Scatter3}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, colour = Country)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with colored encoding 'countries'")
+```
+
+
+
+```{r Scatter4}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, shape = Age)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with shapes encoding 'Age'")
+```
+
+
+
+```{r Scatter5}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Population)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with size encoding 'population'")
+```
+
+
+
+```{r Scatter6}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Population, colour = Country, shape = Age)) +
+  geom_point() +
+  ggtitle("Simple scatter plot combining the features")
+```
+
+
+## Line plot
+```{r line}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_line() +
+  ggtitle("Simple line plot")
+```
+
+
+```{r pointline}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_line() +
+  geom_point()+
+  ggtitle("Simple line plot with points")
+```
+
+
+## Box and Whiskers
+
+```{r boxplot}
+ggplot(Mydata, aes(x=Poverty)) +
+  geom_boxplot() +
+  ggtitle("Simple box plot")
+```
+
+## Jitter
+
+Here we need to add a "fake" vertical dimension 
+
+```{r jitter}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+  geom_jitter() +
+  ggtitle("Jitter points")
+```
+
+## Combining uses layer order!
+
+```{r Boxjitter}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+   geom_jitter() +
+   geom_boxplot() +
+  ggtitle("Boxplot and jitter")
+```
+
+```{r Boxjitter2}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+  geom_boxplot() +
+  geom_jitter() +
+  ggtitle("Boxplot and jitter")
+```
+
+
+# Faceting
+
+
+```{r scatterfacet}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  facet_wrap(~Period)+
+  ggtitle("Faceted graphics ")
+```
+
+
+# Working with aesthetics
+
+### Here we **set** a colour to an aesthetic (points)
+
+```{r aes1 }
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = "blue") +
+  ggtitle("Simple scatter plot with blue points")
+```
+
+### Here we **map** a colour to a variable in the aesthetic (points)
+
+
+```{r aes2}
+ ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+   geom_point(aes(color = "Blue")) +
+   ggtitle("Simple scatter plot with ... red points?")
+```
+The color is red because the variable **mapped** has only one value ("Blue") and assign this value with the first color in the default palette. So the constant value "blue" is mapped with the color red, as indicated in the legend. The legend appears because we **mapped** a color to a variable.   
+
+
+### Here we **map** a colour to a properly defined variable for an aesthetic (points)
+
+```{r aes3}
+
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(aes(color = Age)) +
+  ggtitle("Simple scatter plot with color mapped with Age")
+
+
+```
+
+
+# Don't be fooled by axis range
+
+```{r Zoom1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with default axis")
+```
+
+# Zooming can be dangerous 
+
+
+```{r Zoom2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ylim(0, 600)+
+  ggtitle("Simple scatter plot with customized X axis zoomed ")
+```
+
+
+
+There seems to be no difference... 
+
+
+## Highlighting the difference
+
+##  original graphic with 
+```{r Zoom3}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  #geom_hline(yintercept = 600, colour = "red") +
+  ggtitle("Simple scatter plot with regression line ")
+```
+
+
+## When zoomed in, the points are removed from the graphic and *virtually* from the data set!!
+
+```{r zoom4}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  ylim(c(0, 600)) +
+  geom_smooth(method = "lm")+
+  ggtitle("Simple scatter plot with customized X axis using xlim()")
+```
+
+```{r zoom5}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  scale_y_continuous(limits =c(0, 600))+
+  geom_smooth(method = "lm") +
+  ggtitle("Simple scatter plot with customized X axis using scale_y_continuous()")
+```
+
+## How to properly zoom?  Use *coord_cartesian()*
+
+
+```{r zoom6}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  coord_cartesian(ylim =c(0, 600))+
+  geom_smooth(method = "lm") +
+  ggtitle("Simple scatter plot with customized X axis using coord_cartesian()")
+```
+
+```{r zoom8}
+
+fit1 <- lm(Maternal ~ Poverty, data = Mydata)
+
+predicted_df <- data.frame(Maternal_pred = predict(fit1, Mydata), Poverty = Mydata$Poverty)
+
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+ ylim(c(0, 600)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_line(data = predicted_df, aes(x = Poverty , y =Maternal_pred),
+            colour = "darkorange2", size  = 1.5) +
+  
+  ggtitle("Comparing the regressions with different zooms in the plat")
+```
+
+## the same applies to *facets*
+
+```{r zoom7}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~Period)+
+  ggtitle("Faceted graphics with nonparametric regressions")
+```
+
+
+
+# Beautiful graphics
+
+
+## Labels
+
+
+```{r labels1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  labs( x=  "Poverty Indic. (1.1.1)", 
+        y = "Maternal Mortality Indic. (3.1.1)") +
+  ggtitle("Simple scatter plot with a nice theme")
+
+
+```
+
+
+##  Choosing the right theme
+
+```{r theme1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with a nice theme") +
+   theme_bw()
+  # theme_base()
+  # theme_minimal()
+  # theme_tufte()
+
+```
+
+## Customizing the theme
+
+```{r theme2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot a nice theme") +
+  theme_minimal()
+
+```
+
+## Changing some attributes of the points 
+
+
+
+```{r}
+
+# Colour, shape and alpha-transparency are set for the point geometry 
+ggplot(Mydata, aes(x=Poverty, y= Maternal, size=Population)) +
+  geom_point(colour =  "blue", alpha = 0.5, shape= 5) +
+  ggtitle("Scatter plot where colour, shape and alpha-transparency are set for the point geometry ") +
+  theme_minimal()
+```
+
+
+# Bonus : Interactive graphic
+
+
+```{r}
+# p is my graphic
+
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(aes(color = Country)) +
+  ggtitle("Simple scatter plot with a nice theme") +
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        legend.title = element_text(color = "red", size = 18))
+
+# plotting the graphic
+p
+
+```
+
+
+
+```{r}
+library(plotly)
+
+ggplotly(p)
+```
+
+
+
+```{r}
+knitr::knit_exit()
+```
+
+
