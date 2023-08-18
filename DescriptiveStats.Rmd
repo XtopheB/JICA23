@@ -9,7 +9,8 @@ output:
     always_allow_html: true
     toc: yes
     keep_md: no
-    code_folding: show
+    code_folding: hide
+    code_download: true
     fig_width: 6.5
     fig_height: 4
   word_document:
