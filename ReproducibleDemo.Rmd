@@ -1,0 +1,110 @@
+---
+title: "A simple Example of a reproducible document"
+author: "Christophe Bontemps"
+date: "2023-08-18"
+output:
+  html_document: 
+    df_print: paged
+    always_allow_html: true
+    toc: yes
+    keep_md: no
+    code_folding: hide
+    code_download: true
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ,include=FALSE}
+library(tidyverse)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r summary}
+# We load the data from SIAP's server where we stored the .csv file
+SouthAfrica <-read.csv2("https://www.unsiap.or.jp/on_line/ML/MLData/ML_SouthAfrica.csv")
+```
+
+### Let's look at the variables of the file 
+
+```{r}
+names(SouthAfrica)
+```
+
+## Exploring singles (or not?)
+ In the following chunk, we can select *singles* households (or not) using the variable *z10*  (=1 for *singles* housholds)
+
+```{r}
+Mychoice <- 1
+Mydata <- SouthAfrica %>%
+  filter(z10 == Mychoice) %>%
+  select(ltexp, FoodShr) %>%
+  arrange(ltexp)
+
+```
+
+## Summaries
+
+```{r}
+summary(Mydata)
+```
+> We can also say that the data set has **`r nrow(Mydata)`** observations with the choice **singles = `r Mychoice`** !
+
+## Including Plots
+
+### Histograms 
+
+Let's first look at the distribution of the two variables.
+
+
+```{r}
+ggplot(Mydata) +
+ aes(x = ltexp) +
+ geom_histogram(bins = 50L, fill = "pink") +
+ labs(title = "Histogram of log(expenditure)", 
+ subtitle = "Singles") +
+ theme_minimal()
+
+```
+
+
+```{r}
+ggplot(Mydata) +
+ aes(x = FoodShr) +
+ geom_histogram(bins = 50L, fill = "lightblue") +
+ labs(title = "Histogram of Food Share)", 
+ subtitle = "Singles") +
+ theme_minimal()
+
+```
+
+
+# Exporing the relationship:
+
+```{r}
+Mydata%>%
+  ggplot() +
+  aes(x= ltexp, y= FoodShr) +
+  geom_point( color = "darkgrey")+
+  theme_minimal()
+```
+
+```{r M0-Scatter, eval=FALSE, include=FALSE}
+# This how we can do also with "core R" programming
+
+plot(Mydata$FoodShr~Mydata$ltexp,
+     main="Scatter plot of Food Share vs Log(exp)", 
+     xlab="Log(Exp)",ylab = "FoodShare",
+    pch=19, cex = 0.5,col = "grey", frame.plot = FALSE )
+```
+
+
