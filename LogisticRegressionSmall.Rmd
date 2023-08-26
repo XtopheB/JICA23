@@ -1,5 +1,5 @@
 ---
-title: "Using GIS environmental data for gender statistics analysis"
+title: "Analysing Child Marriage with Logistic Regression"
 subtitle: "A step-by-step case study with Bangladesh data "
 author: "Christophe Bontemps & Eunkoo Lee - SIAP"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -7,7 +7,7 @@ output:
   html_document:
     code_folding: show
     highlight: tango
-    number_sections: yes
+    number_sections: no
     theme: lumen
   pdf_document: default
   word_document: default
@@ -18,7 +18,7 @@ knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = T
 ```
 
 * * *
-# 1. Introduction to integrating household survey and geospatial data
+# Child marriage and the environment
 
 ## GIS data sources
 
