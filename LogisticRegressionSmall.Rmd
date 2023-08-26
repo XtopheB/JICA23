@@ -1,0 +1,254 @@
+---
+title: "Using GIS environmental data for gender statistics analysis"
+subtitle: "A step-by-step case study with Bangladesh data "
+author: "Christophe Bontemps & Eunkoo Lee - SIAP"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+```
+
+* * *
+# 1. Introduction to integrating household survey and geospatial data
+
+## GIS data sources
+
+There are many data sources freely available with environmental information at a very detailed level. These files are from huge data bases that cover large areas of the word. 
+
+> Some sources may require a login and an enrollment to some institution. Most of the files are very "heavy". 
+
+The table hereafter provides some links to the resources we have used for this analysis. 
+
+
+|     Geo-covariates      |     Definition                                                                                                                                               |     Data   source link (use Google Chrome)                                                                                                |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+|     Travel_Times2015    |     Travelling time (in minutes) to the nearest city of   more than 50,000 people                                                                            |     https://doi.org/10.6084/m9.figshare.7638134.v3                                                                                        |
+|     SMOD2015            |     Degree of urbanization                                                                                                                                   |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_SMOD_POP_GLOBE_R2016A/                                                    |
+|     Buildup2015         |     Percentage of building footprint area in relation to   the total cell area.                                                                              |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_BUILT_LDSMT_GLOBE_R2015B/GHS_BUILT_LDS2014_GLOBE_R2016A_54009_1k/V1-0/    |
+|     Aridity2015         |     Climate data related to evapotranspiration processes   and rainfall deficit for potential vegetative growth. Higher index suggests   higher humidity.    |     https://figshare.com/articles/Global_Aridity_Index_and_Potential_Evapotranspiration_ET0_Climate_Database_v2/7504448/3                 |
+|     Density2015         |     Number of inhabitants per   cell (1km X 1km)                                                                                                             |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_1k/V1-0/        |
+|     aIncome2013         |     Estimates of income in USD   per grid square                                                                                                             |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
+|     aPP2013             |     Mean likelihood of living in   poverty per grid square                                                                                                   |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
+|     aWealthIndex2011    |     Mean DHS wealth index score   per grid square                                                                                                            |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
+
+### Some good practices for file management {-}
+
+We need a minimum of organisation in the data and code folders, as well as some R packages.
+
+```{r packages}
+
+# Tidy data management packages
+library(tidyverse)
+library(data.table)
+
+# Plotting packages
+library(ggplot2)
+library(RColorBrewer)
+
+# Nice presentation of results
+library(knitr)
+library(papeR)
+
+# Tables 
+library(modelsummary)
+library(gt) 
+library(gtsummary)
+
+```
+
+
+#  Understanding child marriage using geo-covariates
+
+## The DHS survey 
+
+The DHS Bangladesh 2014 provides useful demographic and socioeconomic variables (e.g. age, sex, age at first marriage, marital status, education, wealth index, etc.) that can be used to analyze the impact of each of these variables on child marriage. 
+
+
+```{r}
+load("Data/MyDHS.Rda")
+```
+
+# Descriptive statistics
+
+```{r echo=TRUE}
+names(MyDHS)
+
+```
+```{r}
+datasummary_skim(MyDHS, type = "numeric")
+```
+
+
+
+### Correlation plot {-}
+
+Before we begin our statistical analysis, we can look at the general relationships of the independent variable by calculating the correlation matrix. Using R, we can easily create a correlation plot for the eight geo-covariates to investigate whether there is any relationship between them. 
+
+> It is always a good practice to analyse the relationships between the variables
+
+```{r }
+library(ggcorrplot)
+
+# We compute the correlation matrix of the covariates
+corr_coef<-cor(MyDHS[, c(3:10)],use = "p")
+
+#And then plot it with nice options 
+ggcorrplot(corr_coef, 
+           type = "lower",         # lower triangle of the matrix only
+           hc.order = TRUE,        # variable sorted from highest to lowest
+           outline.col = "white",  #Color options
+           lab = TRUE)
+
+```
+
+## Logistic regression
+
+We will use the DHS survey at the individual level and construct a binary response variable indicating whether there was marriage before 15 years old (or "*girl's marriage*"). We will try to understand which factor**S** may affect the probability to observe girl's marriage, and in particular whether, after controlling for the usual individual factors such as education, wealth and other socioeconomic factors, there is also an impact of environmental factors.   
+
+
+```{r}
+# Defining the variables of the model
+Y<-"I_Before15"               # Response variable
+XCovars <- c(1:10)   # age+education+GIS
+
+
+formula_string<- paste(Y, paste(colnames(MyDHS)[XCovars], collapse=" + "), sep="~")
+print(paste(" Regression formula: ",formula_string))
+
+```
+
+### Results {-}
+We use a logit model with several explanatory variables
+
+```{r, results='asis'}
+# Logistics Regression
+glm.fit <- glm(formula_string, data = MyDHS, family = binomial)
+
+# Nice printing of the results (using paper and knitr packages)
+pretty_lm2 <- prettify(summary(glm.fit))
+kable(pretty_lm2, digits = 3)
+
+```
+
+
+### Confusion Matrix {-}
+
+The confusion matrix shows how well the model predicted the outcome. If the model was perfect, we would only have elements on the diagonal of this matrix and 0’s everywhere. In total, the model misclassified (1426 + 4442)/21262 = **29%** of the outcome, which yields **an accuracy of 71 per cent** (100%-29%).
+
+```{r, results=TRUE }
+library("regclass")
+confusion_matrix(glm.fit)
+```
+
+
+### Visual representation of the logistic model{-} 
+We can also visualize the effect of some of the most significant variables in the model. 
+
+```{r visreg}
+library(visreg)
+library(ggpubr)
+
+# Probabilities of married before 15 wrt 
+p.age <- visreg(glm.fit, "Age", scale="response", rug=0,  # for rugs =2
+       xlab="Age",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p.education <- visreg(glm.fit, "Education", scale="response", rug=0,
+       xlab="Education",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) + theme_minimal() + 
+ theme(axis.text.x = element_text(angle = 45,
+                                   vjust = 1,
+                                   hjust=1,
+                                   size=7))
+
+
+p.aridity <- visreg(glm.fit, "Aridity2015", scale="response", rug=0,
+       xlab="Aridity level (2015)",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p.income <- visreg(glm.fit, "aIncome2013", scale="response", rug=0,
+       xlab=" Estimated income (in $ 2013)",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+
+figure <- ggarrange( p.age, p.education, p.aridity, p.income,
+                    #labels = c("Edudation", "Age",  "Aridity (2015)", ""),
+                    ncol = 2, nrow = 2)
+figure
+```
+
+We can see the marginal effects  of significant predictors in the model. The probability of being married before 15 increases with age. This shows the higher prevalence of the practice in the past.
+
+As the level of education increases, the probability decreases. We can notice a clear drop in the probability between the category “incomplete secondary” and “complete secondary”. 
+
+> As the aridity (Aridity2015) level increases, the probability decreases. As the level of income (aPP2013) increases, the probability decreases. 
+
+# Random Forests  
+ 
+Random Forests is basically a collection of many decision trees. Rather than considering a single decision tree, Random Forests creates a wide variety of trees by using a bootstrapped sample from the original data and considering only a subset of the variables for split nodes until it reaches the terminal nodes. The variables for split nodes are randomly chosen from a subset of variables (e.g. *Aridity*, *SMOD2015*) that minimize the variance in the child nodes. By repeating this process many times (n=500 by default in R), this results in a forest of different decision trees. 
+
+```{r RF, cache = TRUE}
+set.seed(888)               # set random seed so we can reproduce the result
+myRandomForest<-randomForest(as.formula(formula_string),
+                             data = MyDHS,
+                             importance = TRUE,
+                             maxnodes=25,
+                             ntree=100,
+                             type="classification",
+                             na.action = na.roughfix)
+```
+
+We use *randomForest* package in R to fit a Random Forests model. The default number of trees is set to 500 in R, but we can also set the number of trees of our choice (*ntree=1000*).
+
+### Accuracy rate and confusion Matrix {-}
+
+
+
+```{r, results = TRUE}
+myRandomForest
+
+```
+
+ The error rate of our model is **27.44 %**, which means the accuracy of the model is about **73 per cent**. This is slightly higher than the logistic regression model (71 per cent). 
+
+### Variable importance plot {-}
+
+Using the *varImPlot* function in R, we can find out which variables play an important role in the model. The variable importance plot basically shows the mean decrease in accuracy when we remove each variable while making the decision tree.
+
+```{r}
+varImpPlot(myRandomForest, 
+           type = 1,
+           main =" Importance Plot for Random Forest Model")
+```
+
+The first four important variables are “*Education*”, “*Age*”, “*aPP2013*” and “*Aridity 2015*”. This is also consistent with the result we get from the logistic regression where these variables were also significant. 
+
+# Conclusion
+
+The results suggest that: 
+
+-  “*Education*”, 
+- “*Age*”, 
+- “*Poverty*" (aPP2013) and 
+- “*Aridity*” 
+
+are important variables in explaining and predicting the outcome of marriage before 15 in Bangladesh.
+
+It is intuitive that “Education” empowers women and it significantly reduces the probability of being married before 15. *Age* is positively related to the probability of being married before 15,  suggesting that child marriage is relatively more prevalent in the past, and reveals relative improvements over recent years. 
+
+> Using GIS data, we showed that the *level of aridity*, which measures humidity and rain fall, is significant in predicting child marriage before 15. 
+
+Further research is needed to provide insights on these findings. 
