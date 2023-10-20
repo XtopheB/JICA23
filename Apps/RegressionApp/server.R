@@ -24,11 +24,11 @@ server <- function(input, output) {
   
   # Create the scatter plot
   output$scatterplot <- renderPlot({
-    # Generate the end points for line 
+    # Generate the end points for line Y= a+ b X
     x1 = -3
-    y1 =  input$coef_a * x1 + input$coef_b
+    y1 =  input$coef_a + input$coef_b * x1 
     x2 = 3
-    y2=  input$coef_a * x2 + input$coef_b
+    y2=  input$coef_a  + input$coef_b * x2
     
     # generate the plot
     p <- ggplot(data(), aes(x, y)) +
@@ -40,7 +40,7 @@ server <- function(input, output) {
        p <- p+ geom_segment( aes(x = x1, y = y1, xend = x2, yend = y2), colour = SIAP.color, linewidth = 2) +
         labs(x = "X", y = "Y", 
             title = paste("Scatter Plot with Regression Line: Y =  ",
-                         input$coef_a,"X + ",input$coef_b))  }  
+                         input$coef_a,"+ ",input$coef_b,"X"))  }  
       if (input$show_regression) {
          p<- p+ geom_smooth(method = "lm", se = TRUE, color = "red") 
       }

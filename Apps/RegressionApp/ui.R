@@ -17,11 +17,13 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       HTML("<h4><font color='#2874A6'>Let's adjust a line! </font></h4>"),
-      checkboxInput("show_line", "Play with Y = a X +b", value = FALSE), 
+      checkboxInput("show_line", "Play with Y = a + b X", value = FALSE), 
       conditionalPanel(
         condition = "input.show_line == true",
-        sliderInput("coef_a", "Coefficient a", min = -1, max = 2, value = dynamicValue(), step = 0.1),
-        sliderInput("coef_b", "Coefficient b", min = -2, max = 2, value = -0.5, step = 0.1), 
+        sliderInput("coef_a", 
+                    label =HTML("Coefficient a <em >(constant)</em>"), min = -2, max = 2, value = -0.5, step = 0.1),
+        sliderInput("coef_b",
+                    label =HTML("Coefficient b <em >(slope)</em>"), min = -1, max = 2, value = dynamicValue(), step = 0.1), 
         HTML("<h5><em > The first line you see is randomly chosen! </em></h4>"),
         br()
         
