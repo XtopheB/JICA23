@@ -31,17 +31,19 @@ server <- function(input, output) {
     y2=  input$coef_a * x2 + input$coef_b
     
     # generate the plot
-    ggplot(data(), aes(x, y)) +
+    p <- ggplot(data(), aes(x, y)) +
       geom_point() +
       theme_minimal() +
-      
-      coord_cartesian(xlim = c(-3, 3), ylim = c(-3, 3)) +
-      geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2), colour = SIAP.color, linewidth = 2) +
-      labs(x = "X", y = "Y", 
-           title = paste("Scatter Plot with Regression Line: Y =  ",
-                         input$coef_a,"X + ",input$coef_b)) +
+      coord_cartesian(xlim = c(-3, 3), ylim = c(-3, 3)) 
+    
+      if (input$show_line) {
+       p <- p+ geom_segment( aes(x = x1, y = y1, xend = x2, yend = y2), colour = SIAP.color, linewidth = 2) +
+        labs(x = "X", y = "Y", 
+            title = paste("Scatter Plot with Regression Line: Y =  ",
+                         input$coef_a,"X + ",input$coef_b))  }  
       if (input$show_regression) {
-        geom_smooth(method = "lm", se = TRUE, color = "red") 
+         p<- p+ geom_smooth(method = "lm", se = TRUE, color = "red") 
       }
+    print(p)
   })
 }
