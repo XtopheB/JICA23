@@ -1,0 +1,72 @@
+---
+title: "My title"
+author: "Your name"
+output:
+  html_document:
+    toc: no
+    code_folding: show
+    df_print: paged
+  word_document:
+    toc: no
+  pdf_document:
+    toc: no
+---
+# Your task: 
+
+- Change the name (for your) in the YAML above
+- Run the whole document using the "knit" button 
+- Run the first chunk below, then the second
+- Create a new chunk (No 1) where you'll count the number of observations (put that in Nobs)
+- Create a new chunk (No 2) where you'll count the number of variable (put that in Nvar)
+- Rerun the whole document
+- Create a new chunk (No 3) where 
+    - you will load new data using read.csv2("https://www.unsiap.or.jp/on_line/ML/MLData/ML_SouthAfrica.csv")
+    - Create a scatterplot (ggplot) of ltexp vs FoodShr 
+- Rerun the whole document
+
+
+# Data analysis of Trade data
+We provide here some basic elements about the data set and descriptive statistics on some variables of interest.  
+
+* First we load the data
+* second we print a summary
+
+```{r}
+TradeData <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
+```
+
+We loaded the data set and compile the  report on `r Sys.Date()`
+
+## Summary statistics
+Here are some summary statistics of the export value (*Stat_Value* variable), all products combined:
+
+```{r }
+summary(TradeData$Stat_Value)
+```
+
+###  (new) chunk nb 1  will be here --- 
+
+
+###   (new) chunk nb 2  will be here --- 
+
+The data set contains   **`r  nrow(TradeData)`  observations**, and  **XXXX** variables.
+
+Here is a list of all variables available in the data set: 
+
+```{r}
+names(TradeData)
+```
+
+
+The variable *Principle_Export* list all the types of goods exported from Vanuatu. There are **YYYY** different goods exported. Let's have the list of all these goods. 
+
+```{r}
+unique(TradeData$Principle_Exports)
+
+```
+
+# Now for something different: 
+
+###  Create new chunk nb 3  here --- 
+
+
