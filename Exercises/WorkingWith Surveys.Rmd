@@ -1,0 +1,163 @@
+---
+title: "Working with Survey data"
+author: "Christophe"
+date: "29-08-2024"
+output:
+  html_document:
+    toc: yes
+    code_folding: show
+    df_print: paged
+  word_document:
+    toc: no
+  pdf_document:
+    toc: no
+---
+
+
+#  Simple operations with Survey data
+We provide here some basic elements about using survey data and computation of specific elements
+First we load some packages (libraries). 
+
+> These libraries must have been installed beforefand using the bottom-right panel of RStudio. 
+
+```{r }
+library(tidyverse) 
+```
+
+
+* First we load the data
+* Second we clean the data set imported from excel 
+* Third we start analyzing the data and print a *summary*
+
+> For this exercise, we will generate synthetic data (simulations)
+
+```{r warning=FALSE, include=FALSE}
+# Set a seed for reproducibility
+set.seed(123)
+NbObs <- 200
+
+# Create a data frame with 7 variables and 20 observations
+household_survey_simulated <- tibble(
+  household_id = 1:NbObs,                               
+  household_size = sample(1:8, NbObs, replace = TRUE),  
+  income = sample(20000:100000, NbObs, replace = TRUE),
+  head_gender = sample(c("Male", "Female"), NbObs, replace = TRUE),  
+  head_age = sample(18:80, NbObs, replace = TRUE),      
+  location = sample(c("Urban", "Rural"), NbObs, replace = TRUE),  #
+  random = rnorm(NbObs, 0, 1)               
+) %>%
+  mutate(weight = (random - min(random)) / 
+                              (max(random) - min(random))) %>%
+  select(-c(random))
+
+write.csv2(household_survey_simulated, "Household_Survey.csv")
+```
+
+
+```{r warning=FALSE, include=FALSE}
+household_survey <- read.csv2("Household_Survey.csv")
+```
+
+Now we have a data set, we can view it on the top-right panel. 
+
+Let's compute the average income for `rural` population . 
+
+```{r}
+# Step 1: Create a new data frame with only rural
+household_rural <- household_survey %>%
+  filter(location =="Rural" )
+
+## NB This can be done with subset() too
+household_rural_bis <- subset(household_survey, location =="Rural" )
+```
+
+So subsetting is filtering observations based on a logical test on some variables. 
+
+```{r}
+# Step 2: Calculate total income
+total_rural  <- household_rural %>%
+  summarize(total = sum(income))
+
+# Step 3: Calculate the number of households 
+Nb_rural <-  household_rural %>%
+  count()
+
+# Step 4: Compute the average income
+avg_income <- total_rural$total / Nb_rural$n
+
+# Display the result
+print(avg_income)
+
+```
+
+So, our average income is `r avg_income`
+
+## But Wait! We have to take into account the weights!!
+
+
+```{r}
+# Step 2: Calculate total weighted  income
+total_weighted_rural  <- household_rural %>%
+  mutate(weighted_income = income * weight) %>%
+  summarize(total_weighted_income = sum(weighted_income))
+
+# Step 3: Calculate the weighted number of households 
+Nb_weighted_rural <-  household_rural %>%
+  summarize(total_weights = sum(weight))
+  
+# Step 4: Compute the weighted average income
+avg_weighted_income <- total_weighted_rural$total_weighted_income / Nb_weighted_rural$total_weights
+
+print(avg_weighted_income)
+
+```
+
+## Or in a few line of code
+
+```{r}
+avg_weighted_income2 <- household_survey %>%
+   filter(location =="Rural" ) %>%
+  summarize(weighted_avg_income = sum(income * weight) / sum(weight)) %>%
+   pull(weighted_avg_income) # This extract the only value of the data frame
+
+print(avg_weighted_income2)
+```
+# Now we need to create a specific category 
+
+> Task: Create a new column income_category that categorizes households into "Low",  or "High" income based on the value of income. Use the following thresholds:
+
+* "Low" for income below $50,000
+* "High" for income above $70,000
+
+**Hint** Use the `ifelse`function 
+
+```{r}
+household_survey <- household_survey %>%
+  mutate(income_category = ifelse(income < 50000, "Low", "High"))
+```
+
+## Can we do 3 categories? 
+ 
+* "Low" for income below $30,000
+* "Medium" for income between $30,000 and $70,000
+* "High" for income above $70,000
+ 
+```{r}
+household_survey <- household_survey %>%
+  mutate(income_category = ifelse(income < 30000, "Low",
+                                   ifelse(income <= 70000, "Medium", "High")))
+```
+ 
+## Can we do advanced (complex)  cases?
+> Task: Create a new column *special_status* that indicates whether a household should receive special consideration based on two conditions:
+
+* The household_size is greater than 5.
+* The income is below $30,000.
+
+```{r}
+household_survey <- household_survey %>%
+  mutate(special_status = ifelse(household_size > 5 | income < 30000, 
+                                  "Special Consideration", 
+                                  "No Special Consideration"))
+```
+
