@@ -24,10 +24,9 @@ First we load some packages (libraries).
 library(tidyverse) 
 ```
 
-
 * First we load the data
-* Second we clean the data set imported from excel 
-* Third we start analyzing the data and print a *summary*
+* Second we compute some averages 
+* Third we define new variables 
 
 > For this exercise, we will generate synthetic data (simulations)
 
@@ -50,12 +49,14 @@ household_survey_simulated <- tibble(
                               (max(random) - min(random))) %>%
   select(-c(random))
 
-write.csv2(household_survey_simulated, "Household_Survey.csv")
+write.csv2(household_survey_simulated, "Data/Household_Survey.csv")
 ```
 
+## First we load the data
+Here the data are on a server, online. 
 
-```{r warning=FALSE, include=FALSE}
-household_survey <- read.csv2("Household_Survey.csv")
+```{r }
+household_survey <- read.csv2("https://raw.githubusercontent.com/XtopheB/JICA23/main/Exercises/Household_Survey.csv")
 ```
 
 Now we have a data set, we can view it on the top-right panel. 
