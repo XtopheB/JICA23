@@ -1,50 +1,71 @@
 ---
-title: "A simple Example of a reproducible document"
+title: "A simple Example of a Simple Reproducible Document"
+subtitle: "JICA-TAPOS course"
 author: "Christophe Bontemps"
-date: "2023-08-18"
+date:   "`r Sys.Date()`"
 output:
+  word_document: default
   html_document: 
     df_print: paged
     always_allow_html: true
     toc: yes
+    toc_float: false
     keep_md: no
-    code_folding: hide
+    code_folding: show
     code_download: true
-  word_document: default
   pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# My colors:
+SIAP.color <- "#0385a8"
 ```
 
 ```{r ,include=FALSE}
+# Most important package for data science
 library(tidyverse)
+
+# Nice presentation of results
+library(papeR)
+library(xtable)
+library(flextable)
+library(modelsummary)
+
 ```
 
 
-## R Markdown
+> R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this one for loading data. 
+
+# Data Analysis
 
 ```{r summary}
 # We load the data from SIAP's server where we stored the .csv file
 SouthAfrica <-read.csv2("https://www.unsiap.or.jp/on_line/ML/MLData/ML_SouthAfrica.csv")
 ```
 
-### Let's look at the variables of the file 
+
+## Let's look at the variables of the file 
+
+We have  **`r nrow(SouthAfrica)`** observations and **`r ncol(SouthAfrica)`**  variables (that's a lot)
 
 ```{r}
 names(SouthAfrica)
 ```
 
-## Exploring singles (or not?)
- In the following chunk, we can select *singles* households (or not) using the variable *z10*  (=1 for *singles* housholds)
+## Exploring only singles households (or not?)
+ In the following chunk, we can select *singles* households (or not) using the variable *z10*  (=1 for *singles* households)
 
 ```{r}
-Mychoice <- 1
+# Choice of sub sample (1 = only single households)
+Mychoice <- 0
+
+# Adjusting the data set from my study
 Mydata <- SouthAfrica %>%
   filter(z10 == Mychoice) %>%
   select(ltexp, FoodShr) %>%
@@ -52,16 +73,17 @@ Mydata <- SouthAfrica %>%
 
 ```
 
+ Now, we have only **`r nrow(Mydata)`** observations and now only  **`r ncol(Mydata)`**  variables!
+
+> The original data set (`r nrow(SouthAfrica)` obs.) has been reduced  with the choice **z10 = `r Mychoice`** !
+
 ## Summaries
 
 ```{r}
 summary(Mydata)
 ```
-> We can also say that the data set has **`r nrow(Mydata)`** observations with the choice **singles = `r Mychoice`** !
 
-## Including Plots
-
-### Histograms 
+## Summary statistics: Data Visualization
 
 Let's first look at the distribution of the two variables.
 
@@ -70,8 +92,8 @@ Let's first look at the distribution of the two variables.
 ggplot(Mydata) +
  aes(x = ltexp) +
  geom_histogram(bins = 50L, fill = "pink") +
- labs(title = "Histogram of log(expenditure)", 
- subtitle = "Singles") +
+ labs(title = "Histogram of expenditure", 
+ subtitle = "Only Singles") +
  theme_minimal()
 
 ```
@@ -81,30 +103,77 @@ ggplot(Mydata) +
 ggplot(Mydata) +
  aes(x = FoodShr) +
  geom_histogram(bins = 50L, fill = "lightblue") +
- labs(title = "Histogram of Food Share)", 
- subtitle = "Singles") +
+ labs(title = "Histogram of Food Shares", 
+ subtitle = "Only Singles") +
  theme_minimal()
 
 ```
 
 
-# Exporing the relationship:
+# Exporing the relationships: Regression Analysis
 
 ```{r}
 Mydata%>%
   ggplot() +
   aes(x= ltexp, y= FoodShr) +
   geom_point( color = "darkgrey")+
+  labs(title = "Scatterplot of Food Shares vs Expenditures", 
+  subtitle = "Only Singles households") +
+  theme_minimal()
+```
+## Regression results
+
+```{r  message=FALSE, warning=FALSE}
+# Estmating Regression model
+lmFood <- lm(FoodShr ~ ltexp, data = Mydata)
+
+# table of results
+modelsummary(lmFood, stars = TRUE, 
+             shape = term ~ model + statistic,
+             statistic = c("{std.error}", "{statistic}", "{p.value}"),
+             gof_map = c("nobs", "r.squared"),
+             fmt = 2,
+             output = "flextable")
+
+```
+
+
+## Regression visualized
+
+```{r}
+Mydata%>%
+  ggplot() +
+  aes(x= ltexp, y= FoodShr) +
+  geom_point( color = "darkgrey", alpha = 0.4)+
+  geom_smooth(method = "lm", color = SIAP.color, se = TRUE) +  # regression line + 95% CI
+  labs( title = "Linear regression of  of Food Shares (Y) on Expenditures (X)", 
+        subtitle = paste("Only Singles households, N= ", nrow(Mydata), "obs."),
+        caption = paste("For this model, we have R2 =", round(summary(lmFood)$r.squared, 3))) +
+  xlab("Expenditures (log)") +
+  ylab("Food Share") +
+  
   theme_minimal()
 ```
 
-```{r M0-Scatter, eval=FALSE, include=FALSE}
-# This how we can do also with "core R" programming
+# Analysis
+```{r include=FALSE}
+# Computing some objects useful for analysis
+pval <- round(signif(summary(lmFood)$coefficients["ltexp","Pr(>|t|)"], 3), 5)
+beta1 <- round(coef(lmFood)["ltexp"], 2)
+R2 <- round(summary(lmFood)$r.squared, 3)
 
-plot(Mydata$FoodShr~Mydata$ltexp,
-     main="Scatter plot of Food Share vs Log(exp)", 
-     xlab="Log(Exp)",ylab = "FoodShare",
-    pch=19, cex = 0.5,col = "grey", frame.plot = FALSE )
 ```
+
+
+We analyzed the relationship between household food share (`FoodShr`) and the log of total expenditure (`ltexp`) using a simple linear regression for single households.
+
+The **p-value** for the coefficient associated with `ltexp` is very low (`r pval `) and thus the coefficient is significantly different from zero. The effect of the variable  `ltexp` is thus significant. 
+
+The regression results indicate that the **coefficient for `ltexp`** is **`r beta1`**. This **negative** coefficient suggests that as household expenditure increases, the share of spending devoted to food decreases, consistent with Engel’s law.  
+
+
+The model **explains `r R2`** of the variation in food share (R2), indicating that log expenditure is a strong predictor of food share among single households.
+
+Overall, these results confirm the inverse relationship between household expenditure and the proportion of spending devoted to food, highlighting how food share decreases as income rises.
 
 
