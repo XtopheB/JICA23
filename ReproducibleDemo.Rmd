@@ -1,19 +1,19 @@
 ---
-title: "A simple Example of a Simple Reproducible Document"
+title: "Example of a Simple Reproducible Document"
 subtitle: "JICA-TAPOS course"
 author: "Christophe Bontemps"
 date:   "`r Sys.Date()`"
 output:
+  pdf_document: default
   word_document: default
   html_document: 
     df_print: paged
     always_allow_html: true
     toc: yes
-    toc_float: false
+    toc_float: true
     keep_md: no
     code_folding: show
     code_download: true
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
