@@ -22,23 +22,23 @@ knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = T
 
 ## GIS data sources
 
-There are many data sources freely available with environmental information at a very detailed level. These files are from huge data bases that cover large areas of the word. 
+<!-- There are many data sources freely available with environmental information at a very detailed level. These files are from huge data bases that cover large areas of the word.  -->
 
-> Some sources may require a login and an enrollment to some institution. Most of the files are very "heavy". 
+<!-- > Some sources may require a login and an enrollment to some institution. Most of the files are very "heavy".  -->
 
-The table hereafter provides some links to the resources we have used for this analysis. 
+<!-- The table hereafter provides some links to the resources we have used for this analysis.  -->
 
 
-|     Geo-covariates      |     Definition                                                                                                                                               |     Data   source link (use Google Chrome)                                                                                                |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-|     Travel_Times2015    |     Travelling time (in minutes) to the nearest city of   more than 50,000 people                                                                            |     https://doi.org/10.6084/m9.figshare.7638134.v3                                                                                        |
-|     SMOD2015            |     Degree of urbanization                                                                                                                                   |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_SMOD_POP_GLOBE_R2016A/                                                    |
-|     Buildup2015         |     Percentage of building footprint area in relation to   the total cell area.                                                                              |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_BUILT_LDSMT_GLOBE_R2015B/GHS_BUILT_LDS2014_GLOBE_R2016A_54009_1k/V1-0/    |
-|     Aridity2015         |     Climate data related to evapotranspiration processes   and rainfall deficit for potential vegetative growth. Higher index suggests   higher humidity.    |     https://figshare.com/articles/Global_Aridity_Index_and_Potential_Evapotranspiration_ET0_Climate_Database_v2/7504448/3                 |
-|     Density2015         |     Number of inhabitants per   cell (1km X 1km)                                                                                                             |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_1k/V1-0/        |
-|     aIncome2013         |     Estimates of income in USD   per grid square                                                                                                             |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
-|     aPP2013             |     Mean likelihood of living in   poverty per grid square                                                                                                   |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
-|     aWealthIndex2011    |     Mean DHS wealth index score   per grid square                                                                                                            |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    |
+<!-- |     Geo-covariates      |     Definition                                                                                                                                               |     Data   source link (use Google Chrome)                                                                                                | -->
+<!-- |-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------| -->
+<!-- |     Travel_Times2015    |     Travelling time (in minutes) to the nearest city of   more than 50,000 people                                                                            |     https://doi.org/10.6084/m9.figshare.7638134.v3                                                                                        | -->
+<!-- |     SMOD2015            |     Degree of urbanization                                                                                                                                   |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_SMOD_POP_GLOBE_R2016A/                                                    | -->
+<!-- |     Buildup2015         |     Percentage of building footprint area in relation to   the total cell area.                                                                              |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_BUILT_LDSMT_GLOBE_R2015B/GHS_BUILT_LDS2014_GLOBE_R2016A_54009_1k/V1-0/    | -->
+<!-- |     Aridity2015         |     Climate data related to evapotranspiration processes   and rainfall deficit for potential vegetative growth. Higher index suggests   higher humidity.    |     https://figshare.com/articles/Global_Aridity_Index_and_Potential_Evapotranspiration_ET0_Climate_Database_v2/7504448/3                 | -->
+<!-- |     Density2015         |     Number of inhabitants per   cell (1km X 1km)                                                                                                             |     http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_1k/V1-0/        | -->
+<!-- |     aIncome2013         |     Estimates of income in USD   per grid square                                                                                                             |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    | -->
+<!-- |     aPP2013             |     Mean likelihood of living in   poverty per grid square                                                                                                   |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    | -->
+<!-- |     aWealthIndex2011    |     Mean DHS wealth index score   per grid square                                                                                                            |     https://www.worldpop.org/doi/10.5258/SOTON/WP00020                                                                                    | -->
 
 ### Some good practices for file management {-}
 
@@ -195,6 +195,11 @@ We can see the marginal effects  of significant predictors in the model. The pro
 As the level of education increases, the probability decreases. We can notice a clear drop in the probability between the category “incomplete secondary” and “complete secondary”. 
 
 > As the aridity (Aridity2015) level increases, the probability decreases. As the level of income (aPP2013) increases, the probability decreases. 
+
+```{r}
+knit_exit()
+```
+
 
 # Random Forests  
  
