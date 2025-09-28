@@ -1,0 +1,323 @@
+---
+title: "Analysing Child Marriage with Logistic Regression"
+subtitle: "A step-by-step case study with Lao data "
+author: "Christophe Bontemps SIAP"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: no
+    theme: lumen
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+```
+
+
+### Good practices and file management {-}
+
+We need a minimum of organisation in the data and code folders, as well as some R packages.
+
+```{r packages}
+# Importing SPSS file
+library(haven)
+
+# Tidy data management packages
+library(tidyverse)
+library(data.table)
+
+# Plotting packages
+library(ggplot2)
+library(RColorBrewer)
+
+# Nice presentation of results
+library(knitr)
+library(papeR)
+library(visreg)
+library(ggpubr)
+
+# Tables 
+library(modelsummary)
+library(gt) 
+library(gtsummary)
+
+
+
+
+```
+
+
+#  Understanding child marriage
+
+## Read the data
+```{r}
+wm <- read_spss(file ="Data/wm_Lao_2017.sav", user_na = TRUE)
+wm <- as.data.frame(wm)
+```
+
+# Select the only variables that may be relevant 
+
+First, we need to redefine some variable and adjust their right type (numeric, character, logic, etc.)
+
+```{r}
+# Rename and reformat some variables 
+wm$age <- as.numeric(as.character(wm$WB4))
+
+```
+
+
+ We create a new data frame with only the relevant variables 
+
+```{r}
+#select the only relevant variables
+df <- select(wm, 
+             age, WAGEM,  hh6a, welevel, windex5, WM17, WAGEM, MA1, HH7, HH1, wmweight)
+```
+
+
+```{r}
+#Select only women ages between 20 and 24 and those completed the survey
+df <-subset(df,  (WM17 == 1) & age >= 20 & age < 25)
+
+```
+
+That data frame has now `r nrow(df)` observations and  `r ncol(df)` variables 
+
+
+# Descriptive statistics
+
+```{r}
+datasummary_skim(df, type = "numeric")
+```
+
+The variable `WAGEM` is the variable that will help us define  child marriage. But it has some missing information, so we should refine the data set. 
+
+```{r}
+df <- drop_na(df)
+```
+
+> The final data set has **`r nrow(df)`** observations (and  still `r ncol(df)` variables )
+
+```{r}
+# Create a variable that records 1 for child marriage and 0 otherwise
+df$Before18<- ifelse(df$WAGEM<18,1,0)
+
+# That variable must be a factor variable
+df$Before18 <- as.factor(df$Before18)
+
+# the level of education is also a factor variable with 6 levels
+df$welevel <- as.factor(df$welevel)
+
+```
+
+```{r}
+datasummary_skim(df, type = "categorical")
+```
+
+## Cross-tabulations 
+```{r}
+tab <- table(df$Before18, df$welevel)
+
+# Column percentages
+prop.table(tab, margin = 2) * 100  # multiply by 100 for % 
+```
+
+We can also do some cross tabulations 
+
+
+## Logistic regression
+
+We will use the DHS survey at the individual level and construct a binary response variable indicating whether there was marriage before 15 years old (or "*girl's marriage*"). We will try to understand which factor**S** may affect the probability to observe girl's marriage, and in particular whether, after controlling for the usual individual factors such as education, wealth and other socioeconomic factors, there is also an impact of environmental factors.   
+
+
+```{r}
+# Defining the variables of the model
+Y<-"Before18"               # Response variable
+
+XCovars <- c(1,4,5)   # age+education+wealth
+
+
+formula_string<- paste(Y, paste(colnames(df)[XCovars], collapse=" + "), sep="~")
+print(paste(" Regression formula: ",formula_string))
+
+```
+
+### Results {-}
+We use a logit model with several explanatory variables
+
+```{r, results='asis'}
+# Logistics Regression
+glm.fit <- glm(formula_string,
+               data = df,
+               family = binomial)
+
+# Nice printing of the results (using paper and knitr packages)
+pretty_lm2 <- prettify(summary(glm.fit))
+kable(pretty_lm2, digits = 3)
+
+```
+
+
+### Confusion Matrix {-}
+
+The confusion matrix shows how well the model predicted the outcome. If the model was perfect, we would only have elements on the diagonal of this matrix and 0’s everywhere. 
+
+```{r, results=TRUE }
+library("regclass")
+cm <- confusion_matrix(glm.fit)
+cm
+```
+
+
+```{r, results=TRUE }
+TN <- cm[1,1]
+FP <- cm[2,1]
+FN <- cm[1,2]
+TP <- cm[2,2]
+
+# Some indicators 
+misclass <- round(100* (FP+FN)/ (TN+TP+FN+FP), 1)
+
+accuracy <- round(100* (TP + TN) /(TN+TP+FN+FP),1)
+accuracy
+
+
+```
+In total, the model misclassified ( `r FP`   + `r FN` / `r nrow(df)`) = **`r misclass` %** of the outcome, which yields **an accuracy of `r accuracy` per cent** .
+
+### Visual representation of the logistic model{-} 
+We can also visualize the effect of some of the most significant variables in the model. 
+
+
+```{r}
+p_educ <- visreg(glm.fit, "welevel", scale="response", rug=0,  # for rugs =2
+                 xlab="Education level",
+                 ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p_educ
+
+p_wealth <- visreg(glm.fit, "windex5", scale="response", rug=0,  # for rugs =2
+                   xlab="Wealth index",
+                   ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p_wealth
+
+p_age <- visreg(glm.fit, "age", scale="response", rug=0,  # for rugs =2
+                   xlab="Age (in 2017)",
+                   ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p_age
+
+## Combining the graphics
+figure <- ggarrange( p_educ, p_wealth, p_age,
+                     #labels = c("Edudation", "wealth"  "Age"),
+                     ncol = 3, nrow = 1)
+
+figure
+```
+
+
+We can see the marginal effects  of significant predictors in the model. 
+
+As the level of education increases, the probability decreases. We can notice a clear drop in the probability between the category 3 "middle" and  4 “Fourth”. Also, all things being equal, the probability of child marriage decreases with the increase of the level of wealth. 
+
+The probability of being married before 18 decreases also with age. This shows a lower prevalence of the practice in the past.
+
+# But the analysis is not correct...
+There is a sampling protocol and we should integrate the weights for each household. For that, we'll use the package  `survey`
+
+```{r}
+# Declaring survey sample design/weights and creating tables 
+library(survey)
+```
+
+We have the find the variables that define the strata and the weights 
+
+```{r}
+wmdesign<-svydesign(id= ~HH1,strata= ~HH7, weights = ~wmweight, nest=TRUE, data=df)
+```
+
+ We can redo the cross-tabulation, taking into account the weights and stratas..
+ 
+```{r }
+library(RcmdrMisc)
+# cross-tabulations (instead of correlation matrix)
+colPercents(svytable(~Before18+welevel, wmdesign,round=TRUE))
+```
+
+
+```{r }
+colPercents(svytable(~Before18+windex5, wmdesign,round=TRUE))
+```
+
+```{r}
+# Full model with sampling design included
+
+wm.sglm1 <- svyglm(formula = formula_string, 
+                   design = wmdesign, 
+                   family = binomial, 
+                   data = df)
+
+summary(wm.sglm1)
+```
+
+
+```{r}
+# Visualizing regression
+
+pnew_educ <- visreg(wm.sglm1, "welevel", scale="response", rug=0,  # for rugs =2
+                 xlab="Education level",
+                 ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+pnew_educ
+
+pnew_wealth <- visreg(wm.sglm1, "windex5", scale="response", rug=0,  # for rugs =2
+                   xlab="Wealth index",
+                   ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+pnew_wealth
+
+pnew_age <- visreg(wm.sglm1, "age", scale="response", rug=0,  # for rugs =2
+                   xlab="Age (in 2017) ",
+                   ylab="Prob(Child Marriage)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+pnew_age
+
+
+## Combining the graphics
+New_figure <- ggarrange( pnew_educ, pnew_wealth, pnew_age,
+                     #labels = c("Edudation", "wealth"  "Age"),
+                     ncol = 3, nrow = 1)
+
+New_figure
+
+
+```
+
+
+
+# Conclusion
+
+The results suggest that: 
+
+-  “*Education*”, 
+- “*Age*”, 
+and 
+- “*wealth*” 
+
+are important variables in explaining and predicting the outcome of marriage before 18 in Lao.
+
+It is intuitive that “Education” and "wealth" empowers women and it significantly reduces the probability of being married before 18. 
+
+
+Further research is needed to provide insights on these findings. 
