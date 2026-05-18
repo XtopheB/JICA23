@@ -1,0 +1,511 @@
+---
+title: "Understanding child marriage using geo-covariates"
+subtitle: "A step-by-step case study with Bangladesh data "
+author: "Christophe Bontemps & Eunkoo Lee (SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =FALSE, echo = TRUE) 
+
+```
+
+* * *
+# 1. Introduction to integrating household survey and geospatial data
+
+Some packages are needed
+
+```{r packages}
+# GIS packages
+library(raster) ## for reading "RASTER" files
+library(rgdal)  ## for reading "shapefiles"
+library(sp)     ## for adjusting CRS in 
+# library(mapproj)
+
+# Tidy data management packages
+library(dplyr)
+library(data.table)
+
+
+# Plotting packages
+library(ggplot2)
+library(RColorBrewer)
+
+# Nice presentation of results
+library(knitr)
+library(papeR)
+```
+
+We need a minimum of organisation in the data and code folders, as well as some R packages.
+
+```{r}
+# --- Change to YOUR project folder HERE  ---- #
+
+source_folder<-"c:/GitMain/BigDataCourse23/"
+# source_folder<-"c:/Chris/UN-ESCAP/MyCourses/GenderStats/Code/Annex2/"
+
+# Specific sub-folder for data storage
+
+shapedata_folder<-paste(source_folder, "Data/dhsdata/BDGE71FL", sep="")  
+geodata_folder<-paste(source_folder, "Data/geodata/", sep="")
+data_folder<-paste(source_folder,"Data/",sep="")
+
+# this is where all saved .Rda go and can be loaded when needed
+output_folder<-paste(source_folder, "CreatedData/" , sep="")  
+```
+
+
+# 2. Understanding child marriage using geo-covariates
+
+## The DHS survey
+
+
+```{r}
+# Reading DHS survey data 
+merged1<-read.csv(file = paste(source_folder, 'Data/bangladesh.csv', sep=""))  # reading DHS Bangladesh 2014
+merged1$Age<-as.numeric(merged1$Age)
+
+#Computing the proportion of getting married before 15 by cluster
+cluster_average<-aggregate(Before15~DHSCLUST,
+                           data=merged1,
+                           FUN=mean)  
+```
+
+# 3. Integrating DHS and geospatial data
+
+## Reading the DHS Shapefile 
+
+```{r}
+# Reading DHS Shapefile 
+dhsShapeData<-readOGR(shapedata_folder, "BDGE71FL") # Reads the shapefile in DHS
+shapedata<-dhsShapeData@data                        # Reads the data part 
+shapefile_df <- fortify(shapedata)
+shapedata<-shapedata[shapedata$LATNUM>0, ]          # Drops negative Latnum 
+```
+
+### Cluster locations by urban and rural from the shapefile (DHS Bangladesh 2014) {-}
+
+We can use the *latitude* and *longitude* of each observation  to draw a "location map" of the clusters. This generates the **Figure 3** of the document.  
+
+>This is not really "a map", but only points with latitude and longitude defined represented on a grid
+
+
+```{r}
+# Now the shapefile can be plotted, as points 
+# In the aesthetics part of the ggplot we need long, lat,
+#                       and we use group for Urban or Rural.
+map <- ggplot() +
+  geom_point(data = shapedata,
+              aes(x = LONGNUM, y = LATNUM, color = factor(URBAN_RURA)),
+              size = .6) +
+ ggtitle("Shapefile Cluster Location on and X-Y grid") + 
+         labs(x=  "X-axis used as Longitude" ,
+              y = "Y-axis used as Latitude")
+
+# Using the ggplot2 function coord_map will make things look better
+# and it will also let you change the projection.
+map_projected <- map +
+  coord_map()+
+  theme_minimal()
+
+map_projected
+
+```
+
+## Reading raster files 
+ 
+```{r}
+# Reading geographic data - access to cities
+accessData<-raster(paste(geodata_folder,
+                         "accessibility_to_cities_2015.tif",
+                         sep=""))
+accessData
+```
+
+
+```{r}
+#  We need to provide the same  projection reference 
+#  We use sp::spTransform to tell wich CRS is used.
+
+dhsShapeData2 <- spTransform(dhsShapeData, accessData@crs)
+```
+
+## Extracting values from a raster    
+
+We can now **extract** the values from the *acessData* file (a Raster object) at the locations of our household (shapefile). The result is a data frame. The first column is a sequential ID, the other columns are the extracted values, i.e. the travel time to a city for each cluster. 
+
+> Extracting values takes time. 
+
+```{r RasterExtractionAccess, cache = TRUE}
+# !LENGHTY OPERATION!
+
+# Data extraction using the matching between raster and Spatial data
+
+# CAUTION: In the following chunks, the data.fram
+#  dhs_all2000 is used as a generic data.frame (temporary)
+
+# dhs_all2000 <- raster::extract(accessData,     # raster layer
+#                                dhsShapeData2,  # SPDF with centroids for buffer
+#                                 buffer = 2000, # buffer size (meters)
+#                                 df=TRUE)       # returns a dataframe
+#     
+# dhs_all2000<-as.data.frame(dhs_all2000)
+```
+
+
+```{r}
+
+# Filtering to remove na values and distances equal to 0. 
+# dhs_all2000<-dhs_all2000[!is.na(dhs_all2000$accessibility_to_cities_2015)
+#                          & dhs_all2000$accessibility_to_cities_2015>=0, ]
+# 
+# # Aggregation (mean of the travel times for each cluster)
+# # Name changed here to avoid erasing row data: acessData --> accessData.agg
+# accessData.agg<-aggregate(dhs_all2000$accessibility_to_cities_2015, 
+#                           by=list(dhs_all2000$ID), 
+#                           FUN=mean)
+# colnames(accessData.agg)<-c("DHSCLUST", "Travel_Times2015")
+# 
+# # Saving the file in a devoted folder 
+# save(accessData.agg, file="CreatedData/accessData.Rda")
+```
+
+## Importing other geographical information files
+
+The exact same operations can be done with all the other geographic files we have identified (see **Figure 1** of the document for a listing). 
+
+> These operations take time and you want to skip these steps and upload directly the file created (see Section 4). 
+
+```{r RasterExtractionSmod, cache = TRUE, eval =FALSE}
+# !LENGHTY OPERATION!
+
+# # Reading raster file for SMOD2015 
+# smodData<-raster(paste(geodata_folder, "GHS_SMOD_POP2015_GLOBE_R2016A_54009_1k_v1_0.tif", sep=""))
+# dhsShapeData2 <- spTransform(dhsShapeData, smodData@crs)
+# dhs_all2000 <- extract(smodData,    # raster layer
+#                        dhsShapeData2,         
+#                        buffer = 2000,     
+#                        df=TRUE)           
+# dhs_all2000<-as.data.frame(dhs_all2000) 
+# 
+# smodData.agg<-aggregate(dhs_all2000$GHS_SMOD_POP2015_GLOBE_R2016A_54009_1k_v1_0,
+#                         by=list(dhs_all2000$ID),
+#                         FUN=mean)
+# colnames(smodData.agg)<-c("DHSCLUST", "SMOD2015")
+# save(smodData.agg, file="CreatedData/smodData.Rda")
+```
+
+
+```{r RasterExtractionBuildup, cache = TRUE, eval =FALSE}
+# # Reading raster file for Buildup2015 
+# buildupData<-raster(paste(geodata_folder, "GHS_BUILT_LDS2014_GLOBE_R2016A_54009_1k_v1_0.tif", sep=""))
+# dhsShapeData2 <- spTransform(dhsShapeData, buildupData@crs)
+# dhs_all2000 <- extract(buildupData,    
+#                        dhsShapeData2,          
+#                        buffer = 2000,    
+#                        df=TRUE)           
+# dhs_all2000<-as.data.frame(dhs_all2000)
+# 
+# buildupData.agg<-aggregate(dhs_all2000$GHS_BUILT_LDS2014_GLOBE_R2016A_54009_1k_v1_0,
+#                            by=list(dhs_all2000$ID),
+#                            FUN=mean)
+# colnames(buildupData.agg)<-c("DHSCLUST", "Buildup2015")
+# save(buildupData.agg, file="CreatedData/buildupData.Rda")
+```
+
+
+```{r RasterExtractionDensity, cache = TRUE, eval =FALSE}
+# # Reading raster file for Density2015 
+# densityData<-raster(paste(geodata_folder, "GHS_POP_GPW42015_GLOBE_R2015A_54009_1k_v1_0.tif", sep=""))
+# dhsShapeData2 <- spTransform(dhsShapeData, densityData@crs)
+# dhs_all2000 <- extract(densityData,    
+#                        dhsShapeData2,          
+#                        buffer = 2000,     
+#                        df=TRUE)          
+# dhs_all2000<-as.data.frame(dhs_all2000)
+# 
+# densityData.agg<-aggregate(dhs_all2000$GHS_POP_GPW42015_GLOBE_R2015A_54009_1k_v1_0,
+#                            by=list(dhs_all2000$ID),
+#                            FUN=mean)
+# colnames(densityData.agg)<-c("DHSCLUST", "Density2015")
+# save(densityData.agg, file="CreatedData/densityData.Rda")
+```
+
+
+```{r RasterExtractionIncome, cache = TRUE, eval =FALSE}
+# # Reading raster file for aIncome2013 
+# aICData<-raster(paste(geodata_folder, "bgd2013incpov.tif", sep=""))
+# dhs_all2000 <- extract(aICData,    
+#                        dhsShapeData,         
+#                        buffer = 2000,     
+#                        df=TRUE)          
+# dhs_all2000<-as.data.frame(dhs_all2000)
+# temp<-dhs_all2000[!is.na(dhs_all2000$bgd2013incpov), ]
+# 
+# aICData.agg<-aggregate(temp$bgd2013incpov,
+#                        by=list(temp$ID),
+#                        FUN=mean)
+# colnames(aICData.agg)<-c("DHSCLUST", "aIncome2013")
+# save(aICData.agg, file="CreatedData/aICData.Rda")
+```
+
+
+```{r RasterExtractionAPP, cache = TRUE}
+# Reading raster file for aPP2013 
+aPPData<-raster(paste(geodata_folder, "bgd2013ppipov.tif", sep=""))
+dhs_all2000 <- extract(aPPData,    
+                       dhsShapeData,          
+                       buffer = 2000,     
+                       df=TRUE)           
+dhs_all2000<-as.data.frame(dhs_all2000)
+temp<-dhs_all2000[!is.na(dhs_all2000$bgd2013ppipov), ]
+
+aPPData.agg<-aggregate(temp$bgd2013ppipov,
+                       by=list(temp$ID),
+                       FUN=mean)
+colnames(aPPData.agg)<-c("DHSCLUST", "aPP2013")
+save(aPPData.agg, file="CreatedData/aPPData.Rda")
+```
+
+### Map of PSU locations on poverty map from the raster file {-}
+This code generates the **Figure 5** of the document 
+
+```{r}
+# Main plot using the plotting function of raster package
+plot(aPPData, 
+     breaks=c(0, 60, 70, 75, 80, 85, 100, 150),  
+     col = terrain.colors(8),
+     main="Map of PSU locations on Poverty Map", 
+     sub="Probability of Poverty") 
+
+# We can add points for each cluster location on this map
+points(x=shapedata$LONGNUM, 
+       y=shapedata$LATNUM, 
+       type="p", 
+       cex=0.3, 
+       pch=21, 
+       bg=1)
+```
+
+
+```{r RasterExtractionAridity, eval =FALSE}
+# Reading raster file for Aridity2015 
+memory.limit(9999999999)
+aridityData <- raster(readGDAL(paste(geodata_folder, "AI_annual/ai_yr/w001001.adf", sep="")))
+dhsShapeData2 <- spTransform(dhsShapeData, aridityData@crs)
+dhs_all2000 <- extract(aridityData,
+                       dhsShapeData2,
+                       buffer = 2000,
+                       df=TRUE)
+dhs_all2000<-as.data.frame(dhs_all2000)
+dhs_all2000<-dhs_all2000[!is.na(dhs_all2000$band1),]
+
+ aridityData.agg<-aggregate(dhs_all2000$band1,
+                            by=list(dhs_all2000$ID),
+                            FUN=mean)
+colnames(aridityData.agg)<-c("DHSCLUST", "Aridity2015")
+save(aridityData.agg, file="CreatedData/aridityData.Rda")
+```
+
+
+```{r RasterExtractionWealth, cache = TRUE, eval=FALSE}
+# Reading raster file for aWealthindex2011 
+aWIData<-raster(paste(geodata_folder, "bgd2011wipov.tif", sep=""))
+dhs_all2000 <- extract(aWIData,    
+                       dhsShapeData,          
+                       buffer = 2000,     
+                       df=TRUE)           
+dhs_all2000<-as.data.frame(dhs_all2000)
+temp<-dhs_all2000[!is.na(dhs_all2000$bgd2011wipov), ]
+
+aWIData.agg<-aggregate(temp$bgd2011wipov,
+                       by=list(temp$ID),
+                       FUN=mean)
+colnames(aWIData.agg)<-c("DHSCLUST", "aWealthIndex2011")
+save(aWIData.agg, file="CreatedData/aWIData.Rda")
+
+```
+
+
+# 4. Logistic regression and Random Forests 
+
+Since the previous operation may take time and CPU resources, you can directly load the data sets created above and **start using the code here**
+
+```{r}
+### Loading  Geo-covariate for clusters ## 
+load("CreatedData/accessData.Rda")
+load("CreatedData/smodData.Rda")
+load("CreatedData/buildupData.Rda")
+load("CreatedData/aridityData.Rda")
+load("CreatedData/densityData.Rda")
+load("CreatedData/aWIData.Rda")
+load("CreatedData/aICData.Rda")
+load("CreatedData/aPPData.Rda")
+```
+
+
+
+```{r}
+## Function used for merging geo-covariates to DHS data #
+dhsdataMerge<-function(originalData){
+  datause<-merge(originalData, accessData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, smodData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, buildupData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, aridityData, by=c("DHSCLUST"), all.x=T)  ## NO .agg HERE because you gave it to me already aggregated !!! 
+  datause<-merge(datause, densityData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, aWIData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, aICData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-merge(datause, aPPData.agg, by=c("DHSCLUST"), all.x=T)
+  datause<-datause[datause$DHSCLUST!=544,]
+  return(datause)
+}
+# Using this function, we can merge the file cluster_average
+# with all the Geo-covariate extracted at the cluster level
+data.agg<-dhsdataMerge(cluster_average) 
+```
+
+### Correlation plot {-}
+
+
+```{r }
+library(ggcorrplot)
+
+# We compute the correlation matrix of the covariates
+corr_coef<-cor(data.agg[, c(3:10)],use = "p")
+#And then plot it with nice options 
+ggcorrplot(corr_coef, 
+           type = "lower",         # lower triangle of the matrix only
+           hc.order = TRUE,        # variable sorted from highest to lowest
+           outline.col = "white",  #Color options
+           lab = TRUE)
+
+```
+
+## 4.2 Logistic regression
+
+```{r}
+# We use the dhsdataMerge function to merge the survey data (individuals)
+# with all the Geo-covariate extracted at the cluster level
+DataMerged1<-dhsdataMerge(merged1)
+
+# We need to have a factor variable and not directly Before15 (that is numeric here)  
+DataMerged1$I_Before15 <- as.factor(DataMerged1$Before15)
+
+# Education is a factor variable
+DataMerged1$Education <- as.factor(DataMerged1$Education)
+# DataMerged1 <- DataMerged1 %>%                    # defining the reference category
+#   mutate(Education = relevel(Education, "0-No"))
+# 
+
+# We change the unit of Aridity here 
+DataMerged1$Aridity2015 <- DataMerged1$Aridity2015 * 10^8
+
+# Defining the variables of the model
+Y<-"I_Before15"               # Response variable
+XCovars <- c(15, 17, 57:64)   # age+education+GIS
+
+formula_string<- paste(Y, paste(colnames(DataMerged1)[XCovars], collapse=" + "), sep="~")
+print(paste(" Regression formula: ",formula_string))
+
+```
+### Results as in **Figure 7**
+
+```{r, results='asis'}
+# Logistics Regression
+glm.fit <- glm(formula_string, data = DataMerged1, family = binomial)
+
+# Nice printing of the results (using paper and knitr packages)
+pretty_lm2 <- prettify(summary(glm.fit))
+kable(pretty_lm2, digits = 3)
+
+```
+
+
+### Confusion Matrix as in Figure 8 {-}
+```{r, results=TRUE }
+library("regclass")
+confusion_matrix(glm.fit)
+```
+
+
+### Visual representation of the logistic model, as in Figure 9 {-} 
+
+
+```{r visreg}
+library(visreg)
+library(ggpubr)
+
+# Probabilities of married before 15 wrt 
+p.age <- visreg(glm.fit, "Age", scale="response", rug=0,  # for rugs =2
+       xlab="Age",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p.education <- visreg(glm.fit, "Education", scale="response", rug=0,
+       xlab="Education",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) + theme_minimal() + 
+ theme(axis.text.x = element_text(angle = 45,
+                                   vjust = 1,
+                                   hjust=1,
+                                   size=7))
+
+
+p.aridity <- visreg(glm.fit, "Aridity2015", scale="response", rug=0,
+       xlab="Aridity level (2015)",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+p.income <- visreg(glm.fit, "aIncome2013", scale="response", rug=0,
+       xlab=" Estimated income (in $ 2013)",
+       ylab="P(Before15=1)", gg=TRUE) + 
+  ylim(0,1) +theme_minimal()
+
+
+figure <- ggarrange( p.age, p.education, p.aridity, p.income,
+                    #labels = c("Edudation", "Age",  "Aridity (2015)", ""),
+                    ncol = 2, nrow = 2)
+figure
+```
+
+
+# 4.3 Random Forests  
+ 
+ 
+```{r RF, cache = TRUE}
+set.seed(888)               # set random seed so we can reproduce the result
+myRandomForest<-randomForest(as.formula(formula_string),
+                             data = DataMerged1,
+                             importance = TRUE,
+                             maxnodes=25,
+                             ntree=1000,
+                             type="classification",
+                             na.action = na.roughfix)
+```
+
+### Accuracy rate and confusion Matrix as in Figure 11
+
+```{r, results = TRUE}
+myRandomForest
+
+```
+
+
+### Variable importance plot as in Figure 12 
+
+```{r}
+varImpPlot(myRandomForest, 
+           type = 1,
+           main =" Importance Plot for Random Forest Model")
+```
+
+
+

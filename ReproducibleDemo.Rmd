@@ -4,8 +4,6 @@ subtitle: "JICA-TAPOS course"
 author: "Christophe Bontemps"
 date:   "`r Sys.Date()`"
 output:
-  pdf_document: default
-  word_document: default
   html_document: 
     df_print: paged
     always_allow_html: true
@@ -14,6 +12,8 @@ output:
     keep_md: no
     code_folding: show
     code_download: true
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
