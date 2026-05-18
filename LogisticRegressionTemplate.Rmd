@@ -4,13 +4,13 @@ subtitle: "A step-by-step case study with Lao data "
 author: "Christophe Bontemps SIAP"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  word_document: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: no
     theme: lumen
   pdf_document: default
-  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +21,15 @@ knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = T
 ### Good practices and file management {-}
 
 We need a minimum of organisation in the data and code folders, as well as some R packages.
+The folder is organized  with:
+
+- Data  <- *Original (raw) data will be there*
+- Outputs <- *Any result will go there*
+- Documentation  <- *Docs and explanations, additional resources*
+
+In our organization, the code (.R and .Rmd files) will be at the root of the directory. In general, it is recommended to have a directory with `code`. 
+
+We also need some packages: 
 
 ```{r packages}
 # Importing SPSS file
@@ -45,21 +54,23 @@ library(modelsummary)
 library(gt) 
 library(gtsummary)
 
-
-
-
 ```
-
 
 #  Understanding child marriage
 
 ## Read the data
+
+Our data set being in the directory `Data`, we need to specify the right path when loading the data. 
+
 ```{r}
 wm <- read_spss(file ="Data/wm_Lao_2017.sav", user_na = TRUE)
 wm <- as.data.frame(wm)
 ```
 
-# Select the only variables that may be relevant 
+It is good to have a look at the data, even if it has  **`r ncol(wm)`** variables. 
+
+
+## Select the variables that may be relevant 
 
 First, we need to redefine some variable and adjust their right type (numeric, character, logic, etc.)
 
@@ -70,7 +81,7 @@ wm$age <- as.numeric(as.character(wm$WB4))
 ```
 
 
- We create a new data frame with only the relevant variables 
+> We create a new data frame with only the variables for our analysis 
 
 ```{r}
 #select the only relevant variables
@@ -78,6 +89,7 @@ df <- select(wm,
              age, WAGEM,  hh6a, welevel, windex5, WM17, WAGEM, MA1, HH7, HH1, wmweight)
 ```
 
+Then we need to keep only the observations corresponding to our definition: Women of age between 20 and 25.
 
 ```{r}
 #Select only women ages between 20 and 24 and those completed the survey
@@ -85,8 +97,7 @@ df <-subset(df,  (WM17 == 1) & age >= 20 & age < 25)
 
 ```
 
-That data frame has now `r nrow(df)` observations and  `r ncol(df)` variables 
-
+That data frame has now **`r nrow(df)`** observations and  **`r ncol(df)`** variables 
 
 # Descriptive statistics
 
@@ -101,6 +112,8 @@ df <- drop_na(df)
 ```
 
 > The final data set has **`r nrow(df)`** observations (and  still `r ncol(df)` variables )
+
+### Defening the variables with the right "type" 
 
 ```{r}
 # Create a variable that records 1 for child marriage and 0 otherwise
@@ -119,14 +132,27 @@ datasummary_skim(df, type = "categorical")
 ```
 
 ## Cross-tabulations 
+We can also do some cross-tabulations to asses the relations between child marriage and education  
+
+
 ```{r}
 tab <- table(df$Before18, df$welevel)
 
 # Column percentages
-prop.table(tab, margin = 2) * 100  # multiply by 100 for % 
+tt <- prop.table(tab, margin = ) * 100  # multiply by 100 for % 
+kable(tt, digits =2, caption = "Child marriage vs Education")
 ```
 
-We can also do some cross tabulations 
+
+```{r}
+tab <- table(df$Before18, df$hh6a)
+
+# Column percentages
+tt <- prop.table(tab, margin = 2) * 100  # multiply by 100 for % 
+kable(tt, digits =2, caption = "Child marriage vs Area")
+```
+
+
 
 
 ## Logistic regression
@@ -213,12 +239,18 @@ p_age <- visreg(glm.fit, "age", scale="response", rug=0,  # for rugs =2
                    ylab="Prob(Child Marriage)", gg=TRUE) + 
   ylim(0,1) +theme_minimal()
 
-p_age
+
+# p_area <- visreg(glm.fit, "hh6a", scale="response", rug=0,  # for rugs =2
+#                    xlab="Urban vs Rural",
+#                    ylab="Prob(Child Marriage)", gg=TRUE) + 
+#   ylim(0,1) +theme_minimal()
+# 
+# p_area
 
 ## Combining the graphics
-figure <- ggarrange( p_educ, p_wealth, p_age,
+figure <- ggarrange( p_educ, p_wealth, p_age, # p_area,
                      #labels = c("Edudation", "wealth"  "Age"),
-                     ncol = 3, nrow = 1)
+                     ncol = 4, nrow = 1)
 
 figure
 ```

@@ -147,6 +147,7 @@ Title, subtitles, lables, etc. can be added as well as many other things
 ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
   geom_point() +
   ggtitle("Simple scatter plot")
+
 ```
 
 ## Adding other aesthetic components
@@ -238,9 +239,9 @@ ggplot(Mydata, aes(x=Poverty, y ="")) +
 
 
 ```{r scatterfacet}
-ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+ggplot(Mydata, aes(x=Poverty, y= Maternal, colour=Country)) +
   geom_point() +
-  facet_wrap(~Period)+
+  facet_wrap(~Country)+
   ggtitle("Faceted graphics ")
 ```
 
@@ -396,10 +397,10 @@ ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
 ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
   geom_point() +
   ggtitle("Simple scatter plot with a nice theme") +
-   theme_bw()
+   # theme_bw()
   # theme_base()
   # theme_minimal()
-  # theme_tufte()
+   theme_tufte()
 
 ```
 
@@ -459,4 +460,36 @@ ggplotly(p)
 knitr::knit_exit()
 ```
 
+```{r}
+library(ggplot2)
+library(ggthemes)
 
+# Example ggplot
+ggplot(Mydata, aes(x = Population, y = Maternal, color = Country)) +
+  geom_point(size = 3) +  # Use points to show data
+  scale_x_continuous(labels = scales::comma) +  # Format x-axis labels for population
+  theme_economist() +  # Use the economist theme
+  scale_color_economist() +  # Economist color palette
+  labs(
+    title = "Population vs Maternal Health Metric by Country",
+    x = "Population",
+    y = "Maternal Mortality Rate",
+    color = "Country"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5),  # Center the title
+    legend.position = "bottom"  # Position the legend at the bottom
+  )
+
+```
+
+
+```{r}
+
+ggplot(Mydata) +
+ aes(x = Maternal, y = Poverty, colour = Country) +
+ geom_point(shape = "circle", size = 1.5) +
+ scale_color_hue(direction = 1) +
+ theme_minimal() +
+ facet_wrap(vars(Period))
+```

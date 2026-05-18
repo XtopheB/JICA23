@@ -68,7 +68,6 @@ library(ggstance)  # Regression coef. plot
 
 The main focus here is on  regression models when we have many regressors. We will be trying to construct a "*good model*", through variable selection algorithms. 
 
-xc<wx<w<ccwcwcwxxw
 
 We will use an example where many regressors, possibly correlated, are used and we  will explore methods to construct the "*best*" set of variables. 
 

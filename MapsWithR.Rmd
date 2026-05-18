@@ -3,9 +3,6 @@ title: "Create (beautiful) maps with R"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document:
-    keep_tex: yes
-  html_notebook: default
   html_document:
     keep_md: no
     code_folding: hide
@@ -13,6 +10,9 @@ output:
     highlight: tango
     number_sections: yes
     theme: lumen
+  html_notebook: default
+  pdf_document:
+    keep_tex: yes
   word_document: default
 ---
 
