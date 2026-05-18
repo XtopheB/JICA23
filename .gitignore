@@ -1,13 +1,80 @@
+
+# Data 
+*.csv
+*.xlsx
+*.gz
+*.RData
+*.dcf
+*.dbf
+*.zip
+.RData
+
+
+# History files
+
+# Session Data files
+
+.RDataTmp
+# User-specific files
+.Ruserdata
+# Example code in package build process
+*-Ex.R
+# Output files from R CMD build
+/*.tar.gz
+# Output files from R CMD check
+/*.Rcheck/
+
+# Directories
+*_data/
+css/
+images/
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# Output
+*.html
+*.pdf
+*.md
+*.tex
+*.docx
+*.toc
+*.png
+
+
+
+# knitr and R markdown default cache directories
+*_cache/
+_html/
+_rsconnect/
+/www/
+/useR_data/
+/learnR_data/
+/Data/
+/CreatedData/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+*.aux
+*.synctex
+
+# R Environment Variables
+.Renviron
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-.md
-.docx
-.html
-RapWithR.html
-.aux
-DescriptiveStats_files
-GISExample_cache
-GISExample_files
-M4-VisualizingManyDimensions_files
+.Rhistory
+.Rapp.history
+
+# pkgdown site
+docs/
+
+# translation temp files
+po/*~
+# RStudio Connect folder
+rsconnect/
+RawData/TPer_Vic2.dbf
+
