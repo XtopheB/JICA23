@@ -1,0 +1,367 @@
+---
+title: " International Merchandise Trade Statistics hands-on exercise"
+author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
+subtitle: '*A simple report*'
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+
+```
+
+In this exercise, we will learn how to create tables and charts on international merchandise trade data. 
+
+Download the latest trade data of **Indonesia** from the **Bulk file** in UN Comtrade Database or from this [UN Comtrade file](https://comtradeplus.un.org/TradeFlow). Copy the file to one of your folders for the TAPOS course, and set the said folder as your working directory.
+
+
+
+## **Step 1: Install the appropriate R packages and unzip the UN COMTRADE .gz file.**
+*Install packages and unzip source folder only once.*
+*Hint: Change the COMTRADE file name to match your downloaded file.*
+
+```{r}
+#install.packages(c("R.utils", "readxl", "dplyr", "tidyverse", "lookup", "stringr", "networkD3", "kableExtra", "ggplot2", "scales"))
+
+MyPackages = (c("R.utils", "readxl", "dplyr", "tidyverse", "lookup", "stringr", "networkD3", "kableExtra", "ggplot2", "scales"))
+
+lapply(MyPackages, require, character.only = TRUE)  
+#R.utils::gunzip("C_A_H6_360_2023.gz", remove=FALSE)
+```
+
+
+
+## **Step 2: Read the trade data file.** 
+*Import the data to the R environment.*
+
+*Hints: If not all columns are filled up (e.g., FOB value is blank in some rows), there might be an error when using read.table.*
+*The error will state that a certain line does not have the same number of elements as the column header.* 
+*Try using read.delim instead of read.table. The 'header' argument indicates whether the file contains the names of the variables as its first line. If this argument is not included, the default format follows the file format.* 
+*Set header = TRUE if and only if the first row contains one fewer element than the number of columns.*
+
+```{r}
+data <- read.delim('C_A_H6_360_2023.gz', header=TRUE)
+```
+
+
+
+## **Step 3: Remove duplicates.**
+*The full dataset of traded products is reported by 2-, 4-, and 6-digit Harmonized System (HS) code, by trade flow, and by mode of transport.* 
+*To avoid duplicated values that will overestimate the total value of traded goods, create a subset that will include products with 6-digit HS code (cmdCode>5), all modes of transport (motCode==0), and total export and import (!="RM","RX").* 
+*Also, retain only the columns to be used for this analysis, particularly "reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode", "CIFValue", "FOBValue", and "primaryValue".*
+
+*Hints: Create a subset titled "tradedata" in order to preserve the original dataset. There are different functions to drop rows depending on the conditions set.*
+
+```{r}
+tradedata <- data %>%
+  filter(nchar(cmdCode)>5 & motCode==0 & !flowCode %in% c("RM","RX") & partnerCode!=0) %>%
+  select("reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode",
+         "CIFValue", "FOBValue", "primaryValue")
+```
+
+
+
+## **Step 4: Add country and product descriptions.**
+
+## **Step 4a: Import two files on country and product labels.**
+*Import two files on "Country and regional labels" from the file [Country and regional labels.xlsx] and "HSCodeandDescription" from [HSCodeandDescription.xlsx].*
+*The reference source for these are [ComtradePlus_DataItems.xlsx](https://comtradeapi.un.org/files/v1/app/wiki/ComtradePlus_DataItems.xlsx) and [HSCodeandDescription.xlsx](https://unstats.un.org/unsd/classifications/Econ/download/In%20Text/HSCodeandDescription.xlsx).*
+
+*Hints: Rename the column of "Country and regional labels" to "partnerCode", "geoAreaDescription", "regional grouping" for consistency with the COMTRADE file.*
+*Rename as well the columns of "HSCodeandDescription" to "cmdCode" and "cmdCodeDescription".*
+
+```{r}
+countrylabel <- readxl::read_excel("Country and regional labels.xlsx")
+
+colnames(countrylabel) <- c("partnerCode", "geoAreaDescription", "regional grouping")
+
+suppressWarnings(countrylabel$partnerCode <- as.integer(countrylabel$partnerCode))
+
+productlabel <- readxl::read_excel("HSCodeandDescription.xlsx", sheet = "HS22", range = cell_cols("B:C")) 
+
+colnames(productlabel) <- c("cmdCode", "cmdCodeDescription")
+```
+
+
+
+### **Step 4b: Add country names using partnerCode**
+*Two columns will be added in tradedata to include the country description  and product description. Add country description my looking up the country description (partnerCode) in tradedata and matching it with the partnerCode in countrylabel, and retrieving its corresponding geoAreaDescription.*
+
+*Hints: The "left_join" function reads the partnerCode in tradedata, and matching the partnerCode with the geoAreaDescription from countrylabel (i.e., the ComtradePlus Reference Countries file). There are other possible functions to do the matching, such as lookup and merge.*
+
+
+```{r}
+tradedata <- dplyr::left_join(tradedata, countrylabel, by = "partnerCode")
+```
+
+
+
+### **Step 4c: Merge product code with product label**
+*Add product code description (cmdCodeDescription) by looking up the commodity code (cmdCode) and matching it with the commodity code description (cmdCodeDescription) from productlabel.*
+*Add a flow code description (flowCode2) to assign flowCode "X" as "Export", and flowCode "M" as "Import".*
+
+*Hints: The "lookup" function has the following arguments lookup(x, key, value, nomatch=NA).*
+  *x refers to vector of values to lookup, in this case the commodity code cmdCode in the tradedata data frame.*
+  *key refers to the reference vector to be searched, in this case the cmdCode in the productlabel data frame.*
+  *value refers to the vector of values to be returned*
+  *nomatch refers to the value to be returned when no match is found.*
+
+*Next generate a new variable using the 'mutate' function.*
+  
+
+```{r}
+
+tradedata <- tradedata %>% 
+  mutate(cmdCodeDescription = lookup(tradedata$cmdCode, productlabel$cmdCode, productlabel$cmdCodeDescription)) %>% 
+  mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import"))
+
+```
+
+
+
+## **Step 5: Create a  table of total trade flows in million US dollars.**
+*Group data by trade flow (flowCode2). And then sum trade value (primaryValue) within each group.*
+
+*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue and flowCode2. Remember to divide primaryValue by 1000000.*
+
+```{r}
+
+#Option 1
+table1 <- tradedata %>% 
+  group_by(flowCode2) %>% 
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE))
+print(table1)
+
+#Option 2
+table1a <- xtabs(primaryValue~flowCode2, tradedata)/1000000
+format(table1a, big.mark=",")
+
+#Option 3
+table1b <- rowsum(tradedata$primaryValue, tradedata$flowCode2)/1000000
+format(table1b, big.mark=",")
+
+
+```
+
+## **Step 6: Create a  table of trade flows by partner country, in million US dollars.**
+*Group data by partner country (geoAreaDescription) and trade flow (flowCode2). And then, sum up the trade value (primaryValue) within each group.*
+
+*Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
+
+*The initial table will arrange the partner country in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
+
+
+```{r}
+#Option 1
+table2 <- tradedata %>% 
+  group_by(geoAreaDescription, flowCode2) %>% 
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop") %>% 
+  pivot_wider(names_from = flowCode2, 
+              values_from = total_trade_value,
+              values_fill = 0) %>% 
+  arrange(desc(Export))
+
+print(table2)
+
+#Option 2
+table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
+
+table2a <- data.frame(table2a)
+colnames(table2a) <- c("Area", "flowCode2", "Value")
+
+table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%   filter(Export>=1000) %>% 
+  as.data.frame() %>% arrange(desc(Export))
+
+kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
+  kable_classic(full_width = F, html_font = "Arial")
+
+```
+
+
+
+## **Step 7: Create a  table of trade flows in million US dollars, by 2-digit HS code.**
+## **Step 7a: Add two columns showing the 2-digit HS code and description of each commodity.**
+*Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. Add another column for commodity code description (cmd2Code) by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel$cmdCode) and matching it with the commodity code description column in the productlabel dataframe (productlabel$cmdCodeDescription).*
+
+
+```{r}
+
+tradedata <- tradedata %>% 
+  mutate(cmd2Code = str_extract(tradedata$cmdCode, "^.{2}"))
+
+tradedata<- tradedata %>% 
+  mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
+
+```
+
+
+
+## **Step 7b: Create a  table of trade flows in million US dollars, by 2-digit HS code.**
+*Group data by commodity code description (cmd2CodeDescription) and trade flow (flowCode2). Sum trade value (primaryValue) within each group.*
+*The initial table will arrange the commodity code description in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
+
+*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
+
+
+```{r}
+#Option 1
+table3 <- tradedata %>% 
+  group_by(cmd2CodeDescription, flowCode2) %>% 
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop") %>% 
+  pivot_wider(names_from = flowCode2, 
+              values_from = total_trade_value,
+              values_fill = 0) %>% 
+  arrange(desc(Export))
+
+print(table3)
+
+#Option 2
+table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
+table3a <- data.frame(table3a)
+colnames(table3a) <- c("Product", "flowCode2", "Value")
+#table3$Product <- substr(table3$Product, 1, 50)
+
+table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export) 
+  
+kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
+  kable_classic(full_width = F, html_font = "Arial")
+```
+
+
+
+## **Step 8: Data visualization**
+## **Step 8a: Create a bar chart for total trade flows of Indonesia in million US dollars.**
+*Using ggplot, create a bar chart of table 1, where trade flow (flowCode2) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
+
+*Hints: The ggplot function has the following syntax: ggplot(dataframe, aes()). Use table1 as the dataframe, and assign the x-axis and y-axis in the aesthetic mapping (aes(x=. , y =. ))*
+*Add layers to the ggplot. 1) Change the color of the bar chart by using geom_col(fill = ".")*
+*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
+*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
+*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
+
+
+```{r}
+ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
+  geom_col(fill = "steelblue") +
+  labs(title = "Total trade flows of Indonesia in 2023, in million US dollars", x = "Category", y = "Values") +
+  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  theme_minimal()
+```
+
+
+
+## **Step 8b: Create a bar chart for trade flows of Indonesia by country partner in million US dollars.**
+*Using ggplot, create a bar chart of table 2, where partner country (geoAreaDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
+
+*Hints: ggplot works best with long format. First, select only the top 10 countries by export value from table 2. Then, convert the wide format to long format.*
+*Use the ggplot function with table2_long as the dataframe, and assign the x-axis (geoAreaDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping (aes(x=. , y =. , fill=.)).*
+*Add layers to the ggplot.* 
+*1) geom_col is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using geom_col(position = position_dodge(width=0.9))*
+*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
+*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
+*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
+
+
+```{r}
+table2_long <- table2 %>% 
+  slice_max(order_by = Export, n=10) %>% 
+  pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value")
+
+ggplot(table2_long, aes(x=geoAreaDescription, y=total_trade_value, fill=trade_flow )) +
+  geom_col(position = position_dodge(width=0.9)) +
+  labs(title = "Trade flows of Indonesia in 2023 by partner country, in million US dollars", x = "Partner country", y = "Values") +
+  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  theme_minimal()
+```
+
+
+
+## **Step 8c: Create a bar chart for trade flows of Indonesia by top commodity traded, in million US dollars.**
+*Using ggplot, create a bar chart of table 3, where commodity description (cmd2CodeDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
+
+*Hints: ggplot works best with long format. First, select only the top 10 commodity traded by export value from table 3. Then, convert the wide format to long format.*
+*Use the ggplot function with table3_long as the dataframe, and assign the x-axis (cmd2CodeDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping (aes(x=. , y =. , fill=.)).*
+*Add layers to the ggplot. 1) geom_col is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using geom_col(position = position_dodge(width=0.9))*
+*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
+*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
+*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
+*5)Truncate the x-axis label and wrap the text by using scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 60), width = 30)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))*
+
+
+```{r}
+export_order <- table3 %>% 
+  slice_max(order_by = Export, n=10) %>% 
+  arrange(desc(Export)) %>% 
+  select(cmd2CodeDescription)
+
+table3_long <- table3 %>% 
+  slice_max(order_by = Export, n=10) %>% 
+  pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value") %>% 
+  mutate(cmd2CodeDescription = factor(cmd2CodeDescription, levels = export_order$cmd2CodeDescription))
+
+  
+ggplot(table3_long, aes(x=cmd2CodeDescription, y=total_trade_value, fill=trade_flow )) +
+  geom_col(position = position_dodge(width=0.9)) +
+  labs(title = "Trade flows of Indonesia in 2023 by top commodity traded, in million US dollars", x = "Commodity", y = "Values") +
+  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  theme_minimal() +
+  scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 30), width = 30)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+
+## **BONUS: DATA VISUALIZATION**
+*Here is a Sankey Diagram showing Indonesia's trade flows with its top 10 export trading partners in 2023 (in million US dollars).*
+
+```{r}
+
+table4 <- table2a %>% 
+  pivot_longer(cols = c("Export", "Import"), names_to = "flowCode2", values_to = "Value") 
+
+table4 <- table4 %>% 
+  mutate(source = ifelse(table4$flowCode2=="Export", "Indonesia", as.character(table4$Area))) %>% 
+  mutate(target = ifelse(table4$flowCode2=="Import", "Indonesia", as.character(table4$Area))) %>% 
+  select("source", "target", "Value")
+  
+table4$source = paste0('M_', table4$source)
+table4$target = paste0('X_', table4$target)
+table4$source[table4$source == "M_Indonesia"] <- "Indonesia"
+table4$target[table4$target == "X_Indonesia"] <- "Indonesia"
+
+# create nodes data by determining all unique nodes found in your data
+node_names <- unique(c(as.character(table4$source), as.character(table4$target)))
+nodes <- data.frame(name = node_names)
+
+# create links data by matching the source and target values to the index of the node it refers to in the nodes data frame
+links <- data.frame(source = match(table4$source, node_names) - 1,
+                    target = match(table4$target, node_names) - 1,
+                    value = table4$Value)
+
+
+sn <- sankeyNetwork(Links = links, Nodes = nodes, Source = "source", 
+                    Target = "target", Value = "value", NodeID = "name",
+                    sinksRight = FALSE, nodeWidth = 30, 
+                    colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"),
+                    fontSize = 12, fontFamily = "Arial")
+
+sn
+
+```
+
+
+## **ASSIGNMENT**
+*Replicate all steps using your country data. You can download your country data from GIGAPOD. Submit a PDF or html version of the R Markdown. Deadline is on July 10 (Friday)*
+
+render("2026TAPOS_Economics_L4.Rmd")
+
