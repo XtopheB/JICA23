@@ -5,9 +5,9 @@ account: xtophedataviz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 9538102
-bundleId: 7518381
+bundleId: 7827354
 url: https://xtophedataviz.shinyapps.io/RegressionApp-TAPOS/
-when: 1690889174.13295
-lastSyncTime: 1690889174.13298
+when: 1697775817.78998
+lastSyncTime: 1697775817.79
 asMultiple: FALSE
 asStatic: FALSE

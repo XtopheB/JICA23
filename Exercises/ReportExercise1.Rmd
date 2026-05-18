@@ -1,9 +1,9 @@
 ---
-title: "My title"
-author: "Your name"
+title: "First exercise with TAPOS 2024"
+author: "Christophe"
 output:
   html_document:
-    toc: no
+    toc: yes
     code_folding: show
     df_print: paged
   word_document:
@@ -25,31 +25,50 @@ output:
 - Rerun the whole document
 
 
-# Data analysis of Trade data
+#  Data analysis of Trade data
 We provide here some basic elements about the data set and descriptive statistics on some variables of interest.  
 
 * First we load the data
-* second we print a summary
+* second we print a *summary*
 
 ```{r}
+# Here I'm loading the data 
+ 
 TradeData <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
 ```
 
+
 We loaded the data set and compile the  report on `r Sys.Date()`
+
 
 ## Summary statistics
 Here are some summary statistics of the export value (*Stat_Value* variable), all products combined:
 
 ```{r }
 summary(TradeData$Stat_Value)
+
 ```
 
+
+
 ###  (new) chunk nb 1  will be here --- 
+
+```{r}
+Nobs <- nrow(TradeData)
+Nobs
+```
+
 
 
 ###   (new) chunk nb 2  will be here --- 
 
-The data set contains   **`r  nrow(TradeData)`  observations**, and  **XXXX** variables.
+```{r}
+Nvar <- ncol(TradeData)
+```
+
+
+
+The data set contains   **`r  nrow(TradeData)`  observations**, and  `r ncol(TradeData)` variables    also I can do it like this ***`r Nvar `*** variables.
 
 Here is a list of all variables available in the data set: 
 
@@ -68,5 +87,14 @@ unique(TradeData$Principle_Exports)
 # Now for something different: 
 
 ###  Create new chunk nb 3  here --- 
+```{r}
+library(ggplot2)
+ggplot(TradeData, aes(y = Stat_Value)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of stat_value",
+       y = "stat_value") +
+  coord_flip() +
+  theme_minimal()
+```
 
 

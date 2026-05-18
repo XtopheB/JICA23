@@ -36,7 +36,7 @@ mydata <- data.frame(name = c("John", "Sokol", "Chris"),
 ## Welcome 
 
 
-This is an interactive tutorial that should help you verify that you and your computer are ready to use the materials developed for this course using R and RStudio.^[This document uses materials developed by *Garrick Aden-Buie, Barret Schloerke & JJ Allaire* , the creators of the [learner](https://rstudio.github.io/learnr/) package]  
+This is an interactive tutorial that should help you verify that you and your computer are ready to use the materials developed for this course using R and RStudio.^[This document uses materials developed by *Garrick Aden-Buie, Barret Schloerke & JJ Allaire* , the creators of the [learner](https://rstudio.github.io/learnr/) package. *This version is 2.1 (August 2023)*.]  
 
 ### Learning Objectives
 At the end of this tutorial you should be able to:  
@@ -539,9 +539,9 @@ Use the code chunks below to count the number of countries that:
 
 #### Have a *maternal mortality rate* lower than 12%
 
-    ```{r filterex1, exercise = TRUE}
-    
-    ```
+```{r filterex1, exercise = TRUE}
+
+```
     
 ```{r filterex1-solution}
 SDG %>% 

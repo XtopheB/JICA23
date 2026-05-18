@@ -1,0 +1,257 @@
+---
+title: "Exercises with Survey data"
+author: "Christophe Bontemps (SIAP)"
+date: "29-08-2024"
+output:
+  html_document:
+    toc: yes
+    code_folding: show
+    df_print: paged
+  word_document:
+    toc: no
+  pdf_document:
+    toc: no
+---
+
+```{rsetup, include=FALSE}
+# Set global chunk options to hide code
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Overview
+This document contains both the instructions and some code to practice your R coding skills. 
+We'll provide hints  as well. 
+The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. Consider this as a self-paced guided tour, follow me!  
+
+First we need to load some useful packages (libraries). 
+
+> These libraries must have been installed beforefand using the bottom-right panel of RStudio. Normally you have these libraies already installed.  
+
+```{r include=FALSE}
+library(tidyverse) 
+```
+
+### Here are the steps to achieve:
+
+* First we load the data
+* Second we compute some averages 
+* Third we define new variables 
+
+> For this exercise, you will not need to download data on your computer. We read the data directly in R, from a server, and then store that in a data frame in R.
+
+
+# Prerequisite: 
+
+* Save the file ***ExerciseWithSurveyData.Rmd*** on a folder in your computer and open it with RStudio (hint: double-click) 
+*  Change the author with your name (*hint: rpelace my name with yours and be careful of the keeping the " "* )
+* Compile or `knit` the document to create an Html or Word file
+
+**All along this exercise, answer all questions in the .Rmd document in RStudio**  
+
+# Working with Survey data 
+
+###  First we load the data
+The data we will be working with are survey-type data, collected directly from an online server and loaded in R in a data frame named *household_survey*
+
+```{r }
+household_survey <- read.csv2("https://raw.githubusercontent.com/XtopheB/JICA23/main/Exercises/Household_Survey.csv")
+```
+
+Now we have a data set, we can view it on the top-right panel. 
+
+## Exercise 1:
+
+*Write your answers directly below, or create an R code chunk to compute the solution*. 
+
+ - How many observations (households) has this file? 
+- How many variables? 
+
+*(hint: you can use the function `nrow()`)*
+
+**Your answer:**
+
+
+## Exercise 2:
+What is the format of the variable *location* ?  (hint: Look in the *environment tab* in the top-right panel and see the description of the variable *location* in the data frame *household_survey*. Alternatively, you can use the function `str()`  in a code chunk. 
+
+**Your answer:**
+
+
+
+## Exercise 3:
+Explain what this code is achieving. 
+
+
+```{r}
+# Code using filter() function
+household_rural <- household_survey %>%
+  filter(location =="Rural" )
+```
+
+Hint: The code above is doing exactly the same thing (but storing inwith a different name) than the code below: 
+
+```{r}
+## NB This can be done with subset() too
+household_rural_bis <- subset(household_survey, location =="Rural" )
+```
+
+**Your answer:**
+
+
+
+
+
+
+# Computing new variables 
+
+We want to compute the average income of the rural population: We do that in 4 steps:
+
+```{r}
+# Step 1: Create a data frame with only the  rural population (using filter()) 
+household_rural <- household_survey %>%
+  filter(location =="Rural" )
+
+# Step 2: Calculate total income for the rural population
+total_rural  <- household_rural %>%
+  summarize(total = sum(income))
+
+# Step 3: Calculate the number of rural households 
+Nb_rural <-  household_rural %>%
+  count()
+
+# Step 4: Compute the average income for the rural population
+avg_income_rural <- total_rural$total / Nb_rural$n
+
+# Display the result
+print(avg_income_rural)
+
+```
+So, the average income for **rural** population  is *`r round(avg_income_rural)`*. 
+
+## Exercise 4
+
+Replicate this exercise  for the *Urban* population (hint: copy paste the previous code). Name the result *avg_income_urban* and compare with rural population. Which one is greater?
+ 
+**Your answer:**
+
+
+
+
+# Working with population in surveys
+
+### But Wait! This file is a survey, and We have to take into account the weight of each observation! 
+
+## Exercise 5
+
+After examining the data frame  *household_survey*  identify the variable that represents the weight of each household. (hint: This variable must be numerical, with values between 0 and 1)
+
+```{r}
+summary(household_survey$weight)
+```
+
+**Your answer** (Hint, you can also use the function `summary()`in an R chunk)  
+
+
+
+
+**Extra bonus question**
+Is there something strange with these weights? 
+
+***Yes!*** Having a household with weight equal to 0 is not right, this would mean that we are not counting that household at all in our computation
+
+
+## Computing the weighted average for rural population 
+ We need to change our way to compute the sums in our previous computation
+ 
+## Exercise 6 
+
+Create a new variable *total_weighted_rural* in the data.frame *household_rural*  that will multiply the  income of each household (each line) with its weight. Hint: you can use the `%>%` operator and the `mutate()` function to create a new variable.
+
+**Your answer**  
+
+
+
+
+Below is the code that computes the weighted average income for the rural population. Please check the difference and how we have modified the 3 steps from previous average computation.   
+ 
+```{r}
+# Step 2bis: Calculate total weighted  income
+total_weighted_rural  <- household_rural %>%
+  mutate(weighted_income = income * weight) %>%   # <- This computes the weighted income
+  summarize(total_weighted_income = sum(weighted_income))
+
+
+# Step 3bis: Calculate the weighted number of households 
+Nb_weighted_rural <-  household_rural %>%
+  summarize(total_weights = sum(weight))
+  
+# Step 4bis: Compute the weighted average income
+avg_weighted_income <- total_weighted_rural$total_weighted_income / Nb_weighted_rural$total_weights
+
+print(avg_weighted_income)
+
+```
+## Exercise 7  
+
+Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rurla population. Which one is greater?    
+
+**Your answer**  
+
+
+
+
+> Note that we can also achieve the same computation in a few line of code ;-)
+
+```{r}
+avg_weighted_income2 <- household_survey %>%
+   filter(location =="Rural" ) %>%            # Keeping only rural households
+   summarize(weighted_avg_income = sum(income * weight) / sum(weight))   # Computing weighted average
+
+# printing the result (stored in a data frame)
+print(avg_weighted_income2$weighted_avg_income)
+```
+
+# Creating a specific category 
+
+> Task: Create a new column (variable)  *income_category* that categorizes households into "Low",  or "High" income based on the value of income. Use the following thresholds:
+
+* "Low" for income below $50,000
+* "High" for income above $70,000
+
+Here is the code that uses the `ifelse()`function for testing whether a condition is true ( whether *income* is lower than 5000, here ) and returns "low" if yes and "high if not in this case,  while the  `mutate()` function creates a new variable *income_category* 
+
+```{r}
+household_survey <- household_survey %>%
+  mutate(income_category = ifelse(income < 50000, "Low", "High"))
+```
+
+## Exercise 8: 
+
+> Task: Create a new column *special_status* that indicates whether a household should receive special consideration based on two conditions:
+
+* The household_size is greater than 5
+AND
+*the income is below $50,000.
+
+Hint: Use the previous code and change the simple condition for the following condition: 
+`household_size > 5 & income < 50000` as first argument of the `ifelse()` function.  The `&` symbol stands for AND between two logical conditions. 
+
+**Your answer**  
+
+
+
+
+
+```{r}
+# Solution here 
+household_survey <- household_survey %>%
+  mutate(special_status = ifelse(household_size > 5 & income < 50000, 
+                                  "Special Consideration", 
+                                  "No Special Consideration"))
+```
+
+# Congratulations! 
+
+This is the end. Normally you should be able to *knit* this file and send the output (word format) to *christophe.bontemps@un.org.*
+
+Thanks! 
