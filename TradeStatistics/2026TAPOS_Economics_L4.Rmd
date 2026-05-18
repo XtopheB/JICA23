@@ -8,10 +8,11 @@ output:
     toc: yes
     toc_float: true
     code_folding: hide
-  pdf_document:
-    toc: yes
   word_document:
     toc: no
+  pdf_document:
+    toc: yes
+always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
 
@@ -40,6 +41,25 @@ lapply(MyPackages, require, character.only = TRUE)
 ```
 
 
+```{r}
+Mypackages <- c(
+  "R.utils",    "readxl",    "dplyr",     "tidyverse",
+  "lookup",     "stringr",   "networkD3", "kableExtra",
+  "ggplot2",    "scales"
+)
+
+# Install any packages that are not yet installed
+install.packages(setdiff(Mypackages, rownames(installed.packages())))
+
+# Load all packages
+cat("Installing all pac")
+for (pkg in Mypackages) {
+  library(pkg, character.only = TRUE)
+  cat("✓", pkg, "\n")
+}
+```
+
+
 
 ## **Step 2: Read the trade data file.** 
 *Import the data to the R environment.*
@@ -50,7 +70,7 @@ lapply(MyPackages, require, character.only = TRUE)
 *Set header = TRUE if and only if the first row contains one fewer element than the number of columns.*
 
 ```{r}
-data <- read.delim('C_A_H6_360_2023.gz', header=TRUE)
+data <- read.delim('Data/C_A_H6_360_2023.gz', header=TRUE)
 ```
 
 
@@ -64,7 +84,10 @@ data <- read.delim('C_A_H6_360_2023.gz', header=TRUE)
 
 ```{r}
 tradedata <- data %>%
-  filter(nchar(cmdCode)>5 & motCode==0 & !flowCode %in% c("RM","RX") & partnerCode!=0) %>%
+  filter(nchar(cmdCode)>5 &
+           motCode==0 &
+           !flowCode %in% c("RM","RX") &
+           partnerCode!=0) %>%
   select("reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode",
          "CIFValue", "FOBValue", "primaryValue")
 ```
@@ -81,17 +104,19 @@ tradedata <- data %>%
 *Rename as well the columns of "HSCodeandDescription" to "cmdCode" and "cmdCodeDescription".*
 
 ```{r}
-countrylabel <- readxl::read_excel("Country and regional labels.xlsx")
+countrylabel <- readxl::read_excel("Data/Country and regional labels.xlsx")
 
 colnames(countrylabel) <- c("partnerCode", "geoAreaDescription", "regional grouping")
 
 suppressWarnings(countrylabel$partnerCode <- as.integer(countrylabel$partnerCode))
+```
 
-productlabel <- readxl::read_excel("HSCodeandDescription.xlsx", sheet = "HS22", range = cell_cols("B:C")) 
+
+```{r}
+productlabel <- readxl::read_excel("Data/HSCodeandDescription.xlsx", sheet = "HS22", range = cell_cols("B:C")) 
 
 colnames(productlabel) <- c("cmdCode", "cmdCodeDescription")
 ```
-
 
 
 ### **Step 4b: Add country names using partnerCode**
@@ -172,14 +197,18 @@ table2 <- tradedata %>%
   arrange(desc(Export))
 
 print(table2)
+```
 
+
+```{r}
 #Option 2
 table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
 
 table2a <- data.frame(table2a)
 colnames(table2a) <- c("Area", "flowCode2", "Value")
 
-table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%   filter(Export>=1000) %>% 
+table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
+  filter(Export>=1000) %>% 
   as.data.frame() %>% arrange(desc(Export))
 
 kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
@@ -281,6 +310,7 @@ ggplot(table2_long, aes(x=geoAreaDescription, y=total_trade_value, fill=trade_fl
   geom_col(position = position_dodge(width=0.9)) +
   labs(title = "Trade flows of Indonesia in 2023 by partner country, in million US dollars", x = "Partner country", y = "Values") +
   geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  coord_flip() +
   theme_minimal()
 ```
 
@@ -316,6 +346,7 @@ ggplot(table3_long, aes(x=cmd2CodeDescription, y=total_trade_value, fill=trade_f
   geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
   theme_minimal() +
   scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 30), width = 30)) +
+  coord_flip() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
