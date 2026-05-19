@@ -1,0 +1,247 @@
+---
+title: "A Fully Automated Report"
+subtitle: "TAPOS -JICA" 
+author: "Christophe Bontemps"
+date: "`r format(Sys.time(), '%A, %d %B %Y, %H:%M')`"
+output:
+  html_document:
+    toc: yes
+    code_folding: hide
+    code_download: true 
+    toc_float: true
+    df_print: paged
+  pdf_document:
+    toc: no
+  word_document:
+    toc: yes
+---
+
+```{r, include=FALSE}
+# Select one product for the detailed analysis
+# Other options: "Wood", "Coffee", "Alcoholic Drinks"
+Mygood <- "Wood"  
+
+```
+
+# An automatic report on  ***`r Mygood`*** 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+```
+
+**Loading libraries**
+
+```{r loadinglibraires}
+# Load the required libraries
+
+# For manipulating data
+library(tidyverse)
+
+# For tables display
+library(flextable)
+```
+
+This is a report using **Rmarkdown** with a very simple structure.
+
+* First, we load the data
+* second, we analyse the whole data set
+* Finally, we focus on a specific good. Here we will focus on ***`r Mygood`*** 
+
+```{r TradeDataLoading, echo=FALSE}
+# We can use the data locally or from SIAP server
+
+# Mydata <- read.csv("Data/TradeData.csv")
+Mydata <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
+
+```
+
+## Raw Data Analysis - all products 
+I have **here  `r  nrow(Mydata)`  observations**
+
+```{r}
+nrow(Mydata)
+```
+
+## Summary statistics
+
+```{r }
+summary(Mydata$Stat_Value)
+```
+
+# Data Manipulation
+
+## Defining the variables with the right "type" 
+
+R is a ***typed*** language with six primary data *types* that variables can hold (numeric,integer, character,  logical, ...). The type determines what kind of data the variable stores and which operations can be performed on it. 
+
+> It is important to work with a data frame where each variable has the right type
+
+```{r}
+# Right type
+Mydata <- Mydata %>%
+  mutate(Year = as.integer(Year), 
+         Stat_Value = as.numeric(Stat_Value)
+  )
+```
+
+
+
+```{r CommodityByType}
+# Calculate total value by principle export type
+CommodityByType <- Mydata %>%
+  group_by(Principle_Exports) %>%
+  summarise(total = sum(Stat_Value, na.rm = TRUE)) %>%
+  arrange(desc(total))
+
+```
+
+Here this are the principle exports by type
+
+```{r TableCommodityByType}
+# Table display
+# To reduce the homogenization efforts and the number of functions to be called, 
+# it is recommended to define formatting properties once and for all
+
+set_flextable_defaults(
+  font.size = 10,   table.layout = "autofit")
+
+# Printing the table
+flextable(CommodityByType)
+```
+
+# Graphical Analysis
+
+Principal Exports over the period
+
+```{r}
+# Plot the exports
+p <-CommodityByType  %>%
+  ggplot()+
+    aes(x = reorder(Principle_Exports, total), y = (total)) +
+  geom_bar(stat = "identity", 
+             fill= "lightsteelblue1") +
+  labs(title ="Exports from Esdeegia [ 2000-2010] ", 
+       subtitle = "Esdeegia National Statistical Office", 
+       x= "Exports categories",
+       y = "Vatu") +
+  coord_flip() +
+  theme_minimal()
+p
+```
+
+
+# Focus on `r Mygood` exports
+
+We have `r nrow(filter(Mydata, Principle_Exports== Mygood))` observations for the product `r Mygood`
+
+
+```{r}
+Mydata %>%
+  filter(Principle_Exports == Mygood) %>%
+  group_by(Year) %>%
+  summarise(total = sum(Stat_Value, na.rm = TRUE)) %>%
+  ggplot(aes(x = Year, y = total)) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  scale_x_continuous(breaks = scales::breaks_pretty()) +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(
+    title = paste0("Exports of ", Mygood , " over Time"),
+    subtitle = "Period [2000-2010]", 
+    caption =  "Esdeegia National Statistical Office",
+    x = "Year",
+    y = "Total Export Value"
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
+library(ggalluvial)
+
+p<- Mydata %>%
+  filter(Principle_Exports == Mygood) %>%
+  filter(EXPORT_COUNTRY != IMPORT_COUNTRY) %>%        # remove same country flows
+  group_by(EXPORT_COUNTRY, IMPORT_COUNTRY) %>%
+  summarise(total = sum(Stat_Value, na.rm = TRUE), .groups = "drop") %>%
+  mutate(EXPORT_COUNTRY = fct_reorder(EXPORT_COUNTRY, total, sum)) %>%  # sort by total
+  ggplot(aes(
+    axis1 = EXPORT_COUNTRY,
+    axis2 = IMPORT_COUNTRY,
+    y = total
+  )) +
+  geom_alluvium(aes(fill = EXPORT_COUNTRY), alpha = 0.7) +
+  geom_stratum(color = NA, fill = NA) +           # removes boxes
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 3) +
+  scale_x_discrete(limits = c("Export Country", "Import Country"),
+                   expand = c(0.1, 0.1)) +
+  labs(
+    title = paste("Trade Flow:",Mygood," Exports"),
+    y = "Total Export Value",
+    fill = "Export Country"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+p
+
+```
+
+```{r, include=FALSE}
+# Word document cannot handle interactive documents
+# uncomment if output is word
+ knitr::knit_exit()
+```
+
+# Interactive version
+
+```{r}
+library(plotly)
+ggplotly(p)
+```
+
+
+```{r}
+library(networkD3)
+library(tidyverse)
+
+# Prepare data
+flows <- Mydata %>%
+  filter(Principle_Exports == Mygood) %>%
+  filter(EXPORT_COUNTRY != IMPORT_COUNTRY) %>%        # remove same country flows
+  group_by(EXPORT_COUNTRY, IMPORT_COUNTRY) %>%
+  summarise(total = sum(Stat_Value, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(total))
+
+# networkD3 needs nodes and links as separate objects
+nodes <- data.frame(
+  name = unique(c(flows$EXPORT_COUNTRY, flows$IMPORT_COUNTRY))
+)
+
+links <- flows %>%
+  mutate(
+    source = match(EXPORT_COUNTRY, nodes$name) - 1,  # 0-indexed
+    target = match(IMPORT_COUNTRY, nodes$name) - 1
+  ) %>%
+  rename(value = total) %>%
+  select(source, target, value)
+
+# Plot
+sankeyNetwork(
+  Links = links,
+  Nodes = nodes,
+  Source = "source",
+  Target = "target",
+  Value = "value",
+  NodeID = "name",
+  fontSize = 12,
+  nodeWidth = 20,
+  sinksRight = TRUE
+)
+```
+
+```{r}
+knitr::knit_exit()
+```
+
+
