@@ -19,7 +19,7 @@ output:
 ```{r, include=FALSE}
 # Select one product for the detailed analysis
 # Other options: "Wood", "Coffee", "Alcoholic Drinks"
-Mygood <- "Wood"  
+Mygood <- "Alcoholic Drinks"  
 
 ```
 

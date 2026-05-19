@@ -10,19 +10,12 @@
 .RData
 
 
-# History files
-
-# Session Data files
 
 .RDataTmp
-# User-specific files
+
 .Ruserdata
-# Example code in package build process
+
 *-Ex.R
-# Output files from R CMD build
-/*.tar.gz
-# Output files from R CMD check
-/*.Rcheck/
 
 # Directories
 *_data/
@@ -41,7 +34,6 @@ images/
 *.docx
 *.toc
 *.png
-
 
 
 # knitr and R markdown default cache directories
@@ -71,6 +63,12 @@ _rsconnect/
 
 # pkgdown site
 docs/
+
+# Output files from R CMD build
+/*.tar.gz
+# Output files from R CMD check
+/*.Rcheck/
+
 
 # translation temp files
 po/*~
