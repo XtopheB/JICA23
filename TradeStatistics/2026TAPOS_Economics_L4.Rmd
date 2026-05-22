@@ -214,17 +214,21 @@ kable(table1)
 
 ```{r TableValuesByCountry }
 #Option 1
-# Computing the values by country 
+# Computing the values by country using group_by
 table2 <- tradedata %>% 
   group_by(geoAreaDescription, flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop") %>% 
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop")
+
+# print(table2)
+
+# The table needs to be restructured by columns
+ table2 <- table2 %>%
   pivot_wider(names_from = flowCode2, 
               values_from = total_trade_value,
               values_fill = 0) %>% 
   arrange(desc(Export))
-
-#print(table2)
-
+ 
+# Nice printing of the table
 kableExtra::kable(table2, digit=3, format.args = list(big.mark = ",")) %>%
   kable_classic(full_width = F, html_font = "Arial")
 ```
@@ -232,17 +236,17 @@ kableExtra::kable(table2, digit=3, format.args = list(big.mark = ",")) %>%
 
 ```{r}
 #Option 2
-table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
-
-table2a <- data.frame(table2a)
-colnames(table2a) <- c("Area", "flowCode2", "Value")
-
-table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
-  filter(Export>=1000) %>% 
-  as.data.frame() %>% arrange(desc(Export))
-
-kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
-  kable_classic(full_width = F, html_font = "Arial")
+# table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
+# 
+# table2a <- data.frame(table2a)
+# colnames(table2a) <- c("Area", "flowCode2", "Value")
+# 
+# table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
+#   filter(Export>=1000) %>% 
+#   as.data.frame() %>% arrange(desc(Export))
+# 
+# kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
+#   kable_classic(full_width = F, html_font = "Arial")
 
 ```
 
