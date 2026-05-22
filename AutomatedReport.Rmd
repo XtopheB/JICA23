@@ -19,7 +19,7 @@ output:
 ```{r, include=FALSE}
 # Select one product for the detailed analysis
 # Other options: "Wood", "Coffee", "Alcoholic Drinks"
-Mygood <- "Alcoholic Drinks"  
+Mygood <- "Wood"  
 
 ```
 
@@ -31,7 +31,8 @@ knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = T
 
 **Loading libraries**
 
-```{r loadinglibraires}
+
+```{r loadinglibraires, echo = FALSE}
 # Load the required libraries
 
 # For manipulating data
@@ -43,15 +44,20 @@ library(flextable)
 
 This is a report using **Rmarkdown** with a very simple structure.
 
+```{r test1, fig.height=3, fig.width=2, message=TRUE, warning=TRUE}
+
+```
+
+
 * First, we load the data
-* second, we analyse the whole data set
+* Second, we analyse the whole data set
 * Finally, we focus on a specific good. Here we will focus on ***`r Mygood`*** 
 
-```{r TradeDataLoading, echo=FALSE}
+```{r TradeDataLoading}
 # We can use the data locally or from SIAP server
 
 # Mydata <- read.csv("Data/TradeData.csv")
-Mydata <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
+ Mydata <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
 
 ```
 
@@ -156,7 +162,7 @@ Mydata %>%
 ```
 
 
-```{r}
+```{r Alluvial}
 library(ggalluvial)
 
 p<- Mydata %>%
