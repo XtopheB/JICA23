@@ -226,6 +226,7 @@ table2 <- tradedata %>%
   pivot_wider(names_from = flowCode2, 
               values_from = total_trade_value,
               values_fill = 0) %>% 
+  filter(Export>=1000) %>%
   arrange(desc(Export))
  
 # Nice printing of the table
@@ -237,14 +238,14 @@ kableExtra::kable(table2, caption = "Exports and imports by country",
 
 ```{r}
 #Option 2
-# table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
-# 
-# table2a <- data.frame(table2a)
-# colnames(table2a) <- c("Area", "flowCode2", "Value")
-# 
-# table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
-#   filter(Export>=1000) %>% 
-#   as.data.frame() %>% arrange(desc(Export))
+table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
+
+table2a <- data.frame(table2a)
+colnames(table2a) <- c("Area", "flowCode2", "Value")
+
+table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
+  filter(Export>=1000) %>%
+  as.data.frame() %>% arrange(desc(Export))
 # 
 # kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
 #   kable_classic(full_width = F, html_font = "Arial")
@@ -352,18 +353,21 @@ ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
 
 *Using ggplot, create a bar chart of table 2, where partner country (geoAreaDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
 
-*Hints: ggplot works best with long format. First, select only the top 10 countries by export value from table 2. Then, convert the wide format to long format.*
-*Use the ggplot function with table2_long as the dataframe, and assign the x-axis (geoAreaDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping (aes(x=. , y =. , fill=.)).*
+*Hints: ggplot works best with long format.*
+
+- *First, select only the top 10 countries by export value from table 2. Then, convert the wide format to long format.*
+- *Use the ggplot function with table2_long as the dataframe, and assign the x-axis (geoAreaDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping (aes(x=. , y =. , fill=.)).*
 *Add layers to the ggplot.* 
-*1) geom_col is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using geom_col(position = position_dodge(width=0.9))*
-*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
-*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
-*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
+
+1. `geom_col` *is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using* `geom_col(position = position_dodge(width=0.9))`
+2. *Add labels to the chart by using* `labs(title = ".", x=".", y=".")`
+3. *Add value as label for each bar by using* `geom_text(aes(label=comma(total_trade_value)))`
+4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance,* `theme_minimal()` , `theme_bw()`, etc.
 
 
-```{r BarFlows}
+```{r BarFlowsCountries}
 # Rearranging the data 
-table2_long <- table2 %>% 
+table2_long <- table2a %>% 
   slice_max(order_by = Export, n=10) %>% 
   pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value") %>%
   arrange(desc(total_trade_value))
@@ -386,19 +390,23 @@ ggplot(table2_long, aes(x=fct_reorder(geoAreaDescription, total_trade_value, sum
 
 
 
-## **Step 8c: Create a bar chart for trade flows of Indonesia by top commodity traded, in million US dollars.**
+## Step 8c: Create a bar chart for trade flows of Indonesia by top commodity traded, in million US dollars.
+
 *Using ggplot, create a bar chart of table 3, where commodity description (cmd2CodeDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
 
 *Hints: ggplot works best with long format. First, select only the top 10 commodity traded by export value from table 3. Then, convert the wide format to long format.*
-*Use the ggplot function with table3_long as the dataframe, and assign the x-axis (cmd2CodeDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping (aes(x=. , y =. , fill=.)).*
-*Add layers to the ggplot. 1) geom_col is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using geom_col(position = position_dodge(width=0.9))*
-*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
-*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
-*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
-*5)Truncate the x-axis label and wrap the text by using scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 60), width = 30)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))*
+*Use the ggplot function with table3_long as the dataframe, and assign the x-axis (cmd2CodeDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping `(aes(x=. , y =. , fill=.))`.*
+
+*Add layers to the ggplot*. 
+1.  `geom_col` *is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using `geom_col(position = position_dodge(width=0.9))`*
+
+2. *Add labels to the chart by using `labs(title = ".", x=".", y=".")`*
+3. *Add value as label for each bar by using `geom_text(aes(label=comma(total_trade_value)))`*
+4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, `theme_minimal()`, `theme_bw()`, etc.*
+5. *Truncate the x-axis label and wrap the text by using scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 60), width = 30)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))*
 
 
-```{r}
+```{r BarFlowsProducts}
 export_order <- table3 %>% 
   slice_max(order_by = Export, n=10) %>% 
   arrange(desc(Export)) %>% 
@@ -410,10 +418,17 @@ table3_long <- table3 %>%
   mutate(cmd2CodeDescription = factor(cmd2CodeDescription, levels = export_order$cmd2CodeDescription))
 
   
-ggplot(table3_long, aes(x=cmd2CodeDescription, y=total_trade_value, fill=trade_flow )) +
+ggplot(table3_long, aes(x=fct_reorder(cmd2CodeDescription, total_trade_value, sum),
+                        y=total_trade_value,
+                        fill=trade_flow )) +
   geom_col(position = position_dodge(width=0.9)) +
-  labs(title = "Trade flows of Indonesia in 2023 by top commodity traded, in million US dollars", x = "Commodity", y = "Values") +
-  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  labs(title = "Trade flows of Indonesia in 2023 by top commodity traded,\n in million US dollars",
+       x = "Commodity",
+       y = "Values") +
+  geom_text(aes(label=comma(total_trade_value)),
+            position = position_dodge(width = 0.9),
+            hjust= +0.5, 
+            size = 3) +
   theme_minimal() +
   scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 30), width = 30)) +
   coord_flip() +
@@ -422,12 +437,13 @@ ggplot(table3_long, aes(x=cmd2CodeDescription, y=total_trade_value, fill=trade_f
 
 
 
-## **BONUS: DATA VISUALIZATION**
+## BONUS: DATA VISUALIZATION
+
 *Here is a Sankey Diagram showing Indonesia's trade flows with its top 10 export trading partners in 2023 (in million US dollars).*
 
 ```{r}
 
-table4 <- table2 %>% 
+table4 <- table2a %>% 
   pivot_longer(cols = c("Export", "Import"), names_to = "flowCode2", values_to = "Value") 
 
 table4 <- table4 %>% 
