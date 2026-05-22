@@ -260,26 +260,39 @@ kableExtra::kable(table2, caption = "Exports and imports by country",
 *Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. Add another column for commodity code description (cmd2Code) by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel\$cmdCode) and matching it with the commodity code description column in the productlabel dataframe (productlabel\$cmdCodeDescription).*
 
 
-```{r}
-# 
+```{r 2-digits}
+# Extracting the first two digits of Code in a new variable
 tradedata <- tradedata %>% 
-  mutate(cmd2Code = str_extract(tradedata$cmdCode, "^.{2}"))
+  mutate(cmd2Code = str_extract(cmdCode, "^.{2}"))
+```
 
-tradedata<- tradedata %>% 
-  mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
+
+```{r Join2digits}
+# Joining Tradedata and Codedescription
+
+tradedata <- tradedata %>%
+  left_join(
+    productlabel, by = c("cmd2Code" = "cmdCode")
+  ) %>%
+  rename(cmd2CodeDescription = cmdCodeDescription.y)  ## <- need to explain this....
+
+# OLD
+# tradedata<- tradedata %>% 
+#   mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
 
 ```
 
 
 
-## **Step 7b: Create a  table of trade flows in million US dollars, by 2-digit HS code.**
+## Step 7b: Create a  table of trade flows in million US dollars, by 2-digit HS code.
+
 *Group data by commodity code description (cmd2CodeDescription) and trade flow (flowCode2). Sum trade value (primaryValue) within each group.*
 *The initial table will arrange the commodity code description in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
 
 *Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
 
 
-```{r}
+```{r TableValuebyProduct }
 #Option 1
 table3 <- tradedata %>% 
   group_by(cmd2CodeDescription, flowCode2) %>% 
@@ -289,24 +302,32 @@ table3 <- tradedata %>%
               values_fill = 0) %>% 
   arrange(desc(Export))
 
-print(table3)
-
-#Option 2
-table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
-table3a <- data.frame(table3a)
-colnames(table3a) <- c("Product", "flowCode2", "Value")
-#table3$Product <- substr(table3$Product, 1, 50)
-
-table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export) 
-  
-kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
+# Nice printing of the table
+kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)", 
+                  digit=3, format.args = list(big.mark = ",") ) %>%
   kable_classic(full_width = F, html_font = "Arial")
 ```
 
 
+```{r}
+#Option 2
+# table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
+# table3a <- data.frame(table3a)
+# colnames(table3a) <- c("Product", "flowCode2", "Value")
+# #table3$Product <- substr(table3$Product, 1, 50)
+# 
+# table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export) 
+#   
+# kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
+#   kable_classic(full_width = F, html_font = "Arial")
+```
 
-## **Step 8: Data visualization**
-## **Step 8a: Create a bar chart for total trade flows of Indonesia in million US dollars.**
+
+
+# Step 8: Data visualization
+
+## Step 8a: Create a bar chart for total trade flows of Indonesia in million US dollars.
+
 *Using ggplot, create a bar chart of table 1, where trade flow (flowCode2) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
 
 *Hints: The ggplot function has the following syntax: ggplot(dataframe, aes()). Use table1 as the dataframe, and assign the x-axis and y-axis in the aesthetic mapping (aes(x=. , y =. ))*
@@ -319,7 +340,8 @@ kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
 ```{r}
 ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
   geom_col(fill = "steelblue") +
-  labs(title = "Total trade flows of Indonesia in 2023, in million US dollars", x = "Category", y = "Values") +
+  labs(title = "Total trade flows of Indonesia in 2023, in million US dollars",
+       x = "Category", y = "Values") +
   geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
   theme_minimal()
 ```
