@@ -4,13 +4,13 @@ author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
   pdf_document:
     toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
@@ -35,7 +35,7 @@ Download the latest trade data of **Indonesia** from the **Bulk file** in UN Com
 ```{r packages, include=FALSE}
 # List of the packages needed
 Mypackages <- c(
-  "R.utils","readxl","dplyr", "tidyverse",
+  "R.utils","readxl","dplyr", "tidyverse", 
   "lookup", "stringr","networkD3", "kableExtra",
   "ggplot2","scales" )
 
@@ -337,7 +337,7 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 *4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
 
 
-```{r}
+```{r BarGlobal}
 ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
   geom_col(fill = "steelblue") +
   labs(title = "Total trade flows of Indonesia in 2023, in million US dollars",
@@ -348,7 +348,8 @@ ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
 
 
 
-## **Step 8b: Create a bar chart for trade flows of Indonesia by country partner in million US dollars.**
+## Step 8b: Create a bar chart for trade flows of Indonesia by country partner in million US dollars.
+
 *Using ggplot, create a bar chart of table 2, where partner country (geoAreaDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
 
 *Hints: ggplot works best with long format. First, select only the top 10 countries by export value from table 2. Then, convert the wide format to long format.*
@@ -360,15 +361,25 @@ ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
 *4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
 
 
-```{r}
+```{r BarFlows}
+# Rearranging the data 
 table2_long <- table2 %>% 
   slice_max(order_by = Export, n=10) %>% 
-  pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value")
+  pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value") %>%
+  arrange(desc(total_trade_value))
+  
 
-ggplot(table2_long, aes(x=geoAreaDescription, y=total_trade_value, fill=trade_flow )) +
+# Bar chart
+## We reorder countries by total trade values
+ggplot(table2_long, aes(x=fct_reorder(geoAreaDescription, total_trade_value, sum),
+                        y=total_trade_value,
+                        fill=trade_flow )) +
   geom_col(position = position_dodge(width=0.9)) +
   labs(title = "Trade flows of Indonesia in 2023 by partner country, in million US dollars", x = "Partner country", y = "Values") +
-  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  geom_text(aes(label=comma(total_trade_value)),
+            position = position_dodge(width = 0.9),
+            hjust= +0.5, 
+            size = 3) +
   coord_flip() +
   theme_minimal()
 ```
