@@ -4,13 +4,13 @@ author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  word_document:
-    toc: no
   pdf_document:
     toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
@@ -229,7 +229,8 @@ table2 <- tradedata %>%
   arrange(desc(Export))
  
 # Nice printing of the table
-kableExtra::kable(table2, digit=3, format.args = list(big.mark = ",")) %>%
+kableExtra::kable(table2, caption = "Exports and imports by country", 
+                  digit=3, format.args = list(big.mark = ",") ) %>%
   kable_classic(full_width = F, html_font = "Arial")
 ```
 
@@ -252,13 +253,15 @@ kableExtra::kable(table2, digit=3, format.args = list(big.mark = ",")) %>%
 
 
 
-## **Step 7: Create a  table of trade flows in million US dollars, by 2-digit HS code.**
-## **Step 7a: Add two columns showing the 2-digit HS code and description of each commodity.**
-*Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. Add another column for commodity code description (cmd2Code) by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel$cmdCode) and matching it with the commodity code description column in the productlabel dataframe (productlabel$cmdCodeDescription).*
+# Step 7: Create a  table of trade flows in million US dollars, by 2-digit HS code.
+
+## Step 7a: Add two columns showing the 2-digit HS code and description of each commodity.
+
+*Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. Add another column for commodity code description (cmd2Code) by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel\$cmdCode) and matching it with the commodity code description column in the productlabel dataframe (productlabel\$cmdCodeDescription).*
 
 
 ```{r}
-
+# 
 tradedata <- tradedata %>% 
   mutate(cmd2Code = str_extract(tradedata$cmdCode, "^.{2}"))
 
@@ -391,7 +394,7 @@ ggplot(table3_long, aes(x=cmd2CodeDescription, y=total_trade_value, fill=trade_f
 
 ```{r}
 
-table4 <- table2a %>% 
+table4 <- table2 %>% 
   pivot_longer(cols = c("Export", "Import"), names_to = "flowCode2", values_to = "Value") 
 
 table4 <- table4 %>% 
