@@ -217,17 +217,23 @@ kable(table1)
 # Computing the values by country using group_by
 table2 <- tradedata %>% 
   group_by(geoAreaDescription, flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop")
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE),
+            .groups = "drop")
 
 # print(table2)
 
 # The table needs to be restructured by columns
- table2 <- table2 %>%
-  pivot_wider(names_from = flowCode2, 
-              values_from = total_trade_value,
-              values_fill = 0) %>% 
-  filter(Export>=1000) %>%
-  arrange(desc(Export))
+
+table2 <- table2 %>%
+  rename(Area = geoAreaDescription) %>%
+  pivot_wider(names_from = flowCode2, values_from = total_trade_value) %>%
+  filter(Export >= 1000) %>%
+  arrange(desc(Export)) %>%
+  as.data.frame()
+
+
+
+# colnames(table2) <- c("Area", "flowCode2", "Value")
  
 # Nice printing of the table
 kableExtra::kable(table2, caption = "Exports and imports by country", 
@@ -236,18 +242,18 @@ kableExtra::kable(table2, caption = "Exports and imports by country",
 ```
 
 
-```{r}
+```{r table2a}
 #Option 2
-table2a <- xtabs(primaryValue~geoAreaDescription+flowCode2, tradedata)/1000000
-
-table2a <- data.frame(table2a)
-colnames(table2a) <- c("Area", "flowCode2", "Value")
-
-table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
-  filter(Export>=1000) %>%
-  as.data.frame() %>% arrange(desc(Export))
+# table2a <- xtabs(primaryValue~geoAreaDescription + flowCode2, tradedata)/1000000
 # 
-# kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
+# table2a <- data.frame(table2a)
+# colnames(table2a) <- c("Area", "flowCode2", "Value")
+# 
+# table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
+#   filter(Export>=1000) %>%
+#   as.data.frame() %>% arrange(desc(Export))
+# # 
+# # kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
 #   kable_classic(full_width = F, html_font = "Arial")
 
 ```
@@ -297,10 +303,12 @@ tradedata <- tradedata %>%
 #Option 1
 table3 <- tradedata %>% 
   group_by(cmd2CodeDescription, flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop") %>% 
+  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE),
+            .groups = "drop") %>% 
   pivot_wider(names_from = flowCode2, 
               values_from = total_trade_value,
               values_fill = 0) %>% 
+  slice_max(n=20, order_by=Export) %>%
   arrange(desc(Export))
 
 # Nice printing of the table
@@ -317,8 +325,8 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 # colnames(table3a) <- c("Product", "flowCode2", "Value")
 # #table3$Product <- substr(table3$Product, 1, 50)
 # 
-# table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export) 
-#   
+# table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export)
+# 
 # kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
 #   kable_classic(full_width = F, html_font = "Arial")
 ```
@@ -367,7 +375,7 @@ ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
 
 ```{r BarFlowsCountries}
 # Rearranging the data 
-table2_long <- table2a %>% 
+table2_long <- table2 %>% 
   slice_max(order_by = Export, n=10) %>% 
   pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value") %>%
   arrange(desc(total_trade_value))
@@ -375,7 +383,7 @@ table2_long <- table2a %>%
 
 # Bar chart
 ## We reorder countries by total trade values
-ggplot(table2_long, aes(x=fct_reorder(geoAreaDescription, total_trade_value, sum),
+ggplot(table2_long, aes(x=fct_reorder(Area, total_trade_value, sum),
                         y=total_trade_value,
                         fill=trade_flow )) +
   geom_col(position = position_dodge(width=0.9)) +
@@ -441,9 +449,10 @@ ggplot(table3_long, aes(x=fct_reorder(cmd2CodeDescription, total_trade_value, su
 
 *Here is a Sankey Diagram showing Indonesia's trade flows with its top 10 export trading partners in 2023 (in million US dollars).*
 
-```{r}
+```{r Sankey}
+# Rearranging table 2 to be long format
 
-table4 <- table2a %>% 
+table4 <- table2 %>% 
   pivot_longer(cols = c("Export", "Import"), names_to = "flowCode2", values_to = "Value") 
 
 table4 <- table4 %>% 
@@ -477,8 +486,9 @@ sn
 ```
 
 
-## **ASSIGNMENT**
+# ASSIGNMENT
+
 *Replicate all steps using your country data. You can download your country data from GIGAPOD. Submit a PDF or html version of the R Markdown. Deadline is on July 10 (Friday)*
 
-render("2026TAPOS_Economics_L4.Rmd")
+
 
