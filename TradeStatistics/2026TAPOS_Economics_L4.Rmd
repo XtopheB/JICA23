@@ -8,6 +8,7 @@ output:
     toc: yes
     toc_float: true
     code_folding: hide
+    code_download: true
   word_document:
     toc: no
   pdf_document:
@@ -27,32 +28,23 @@ Download the latest trade data of **Indonesia** from the **Bulk file** in UN Com
 
 
 
-## **Step 1: Install the appropriate R packages and unzip the UN COMTRADE .gz file.**
-*Install packages and unzip source folder only once.*
-*Hint: Change the COMTRADE file name to match your downloaded file.*
+# Step 1: Install the appropriate R packages 
 
-```{r}
-#install.packages(c("R.utils", "readxl", "dplyr", "tidyverse", "lookup", "stringr", "networkD3", "kableExtra", "ggplot2", "scales"))
+*Install packages only once.*
 
-MyPackages = (c("R.utils", "readxl", "dplyr", "tidyverse", "lookup", "stringr", "networkD3", "kableExtra", "ggplot2", "scales"))
-
-lapply(MyPackages, require, character.only = TRUE)  
-#R.utils::gunzip("C_A_H6_360_2023.gz", remove=FALSE)
-```
-
-
-```{r}
+```{r packages, include=FALSE}
+# List of the packages needed
 Mypackages <- c(
-  "R.utils",    "readxl",    "dplyr",     "tidyverse",
-  "lookup",     "stringr",   "networkD3", "kableExtra",
-  "ggplot2",    "scales"
-)
+  "R.utils","readxl","dplyr", "tidyverse",
+  "lookup", "stringr","networkD3", "kableExtra",
+  "ggplot2","scales" )
 
 # Install any packages that are not yet installed
-install.packages(setdiff(Mypackages, rownames(installed.packages())))
+Newpackages <- setdiff(Mypackages, rownames(installed.packages()))
+install.packages(Newpackages)
 
 # Load all packages
-cat("Installing all pac")
+cat("Installing all packages" )
 for (pkg in Mypackages) {
   library(pkg, character.only = TRUE)
   cat("✓", pkg, "\n")
@@ -60,8 +52,8 @@ for (pkg in Mypackages) {
 ```
 
 
+# Step 2: Read the trade data file.
 
-## **Step 2: Read the trade data file.** 
 *Import the data to the R environment.*
 
 *Hints: If not all columns are filled up (e.g., FOB value is blank in some rows), there might be an error when using read.table.*
@@ -69,21 +61,25 @@ for (pkg in Mypackages) {
 *Try using read.delim instead of read.table. The 'header' argument indicates whether the file contains the names of the variables as its first line. If this argument is not included, the default format follows the file format.* 
 *Set header = TRUE if and only if the first row contains one fewer element than the number of columns.*
 
-```{r}
-data <- read.delim('Data/C_A_H6_360_2023.gz', header=TRUE)
+```{r Importdata }
+Comtradedata <- read.delim('Data/C_A_H6_360_2023.gz', header=TRUE)
 ```
 
+The original data set loaded has **`r nrow(Comtradedata)`** observations and  **`r ncol(Comtradedata)`** variables.
 
 
-## **Step 3: Remove duplicates.**
+# Step 3: Remove duplicates.
+
 *The full dataset of traded products is reported by 2-, 4-, and 6-digit Harmonized System (HS) code, by trade flow, and by mode of transport.* 
-*To avoid duplicated values that will overestimate the total value of traded goods, create a subset that will include products with 6-digit HS code (cmdCode>5), all modes of transport (motCode==0), and total export and import (!="RM","RX").* 
+
+*To avoid duplicated values that will overestimate the total value of traded goods, create a subset that will include products with 6-digit HS code `(cmdCode>5)`, all modes of transport `(motCode==0),` and total export and import `(!="RM","RX")`.* 
+
 *Also, retain only the columns to be used for this analysis, particularly "reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode", "CIFValue", "FOBValue", and "primaryValue".*
 
 *Hints: Create a subset titled "tradedata" in order to preserve the original dataset. There are different functions to drop rows depending on the conditions set.*
 
-```{r}
-tradedata <- data %>%
+```{r tradedata}
+tradedata <- Comtradedata %>%
   filter(nchar(cmdCode)>5 &
            motCode==0 &
            !flowCode %in% c("RM","RX") &
@@ -92,47 +88,62 @@ tradedata <- data %>%
          "CIFValue", "FOBValue", "primaryValue")
 ```
 
+The new data set created has now **`r nrow(tradedata)`** observations and only **`r ncol(tradedata)`** variables
 
+# Step 4: Add country and product descriptions.
 
-## **Step 4: Add country and product descriptions.**
+## Step 4a: Import two files on country and product labels.
 
-## **Step 4a: Import two files on country and product labels.**
-*Import two files on "Country and regional labels" from the file [Country and regional labels.xlsx] and "HSCodeandDescription" from [HSCodeandDescription.xlsx].*
+*Import two files on*:
+
+- "Country and regional labels" from the file [Country and regional labels.xlsx] and 
+- "HSCodeandDescription" from [HSCodeandDescription.xlsx].
+
 *The reference source for these are [ComtradePlus_DataItems.xlsx](https://comtradeapi.un.org/files/v1/app/wiki/ComtradePlus_DataItems.xlsx) and [HSCodeandDescription.xlsx](https://unstats.un.org/unsd/classifications/Econ/download/In%20Text/HSCodeandDescription.xlsx).*
 
 *Hints: Rename the column of "Country and regional labels" to "partnerCode", "geoAreaDescription", "regional grouping" for consistency with the COMTRADE file.*
 *Rename as well the columns of "HSCodeandDescription" to "cmdCode" and "cmdCodeDescription".*
 
-```{r}
+```{r countries}
+# Importing Countries
 countrylabel <- readxl::read_excel("Data/Country and regional labels.xlsx")
 
+# Labeling the variables
 colnames(countrylabel) <- c("partnerCode", "geoAreaDescription", "regional grouping")
 
-suppressWarnings(countrylabel$partnerCode <- as.integer(countrylabel$partnerCode))
+# Setting the right type for partnercode
+countrylabel <- countrylabel %>%
+  mutate(partnerCode = as.integer(partnerCode) )
+
 ```
 
 
-```{r}
+```{r Labels}
+# Importing Labels
 productlabel <- readxl::read_excel("Data/HSCodeandDescription.xlsx", sheet = "HS22", range = cell_cols("B:C")) 
 
 colnames(productlabel) <- c("cmdCode", "cmdCodeDescription")
 ```
 
+## Step 4b: Add country names using partnerCode
 
-### **Step 4b: Add country names using partnerCode**
 *Two columns will be added in tradedata to include the country description  and product description. Add country description my looking up the country description (partnerCode) in tradedata and matching it with the partnerCode in countrylabel, and retrieving its corresponding geoAreaDescription.*
 
 *Hints: The "left_join" function reads the partnerCode in tradedata, and matching the partnerCode with the geoAreaDescription from countrylabel (i.e., the ComtradePlus Reference Countries file). There are other possible functions to do the matching, such as lookup and merge.*
 
 
-```{r}
+```{r join}
 tradedata <- dplyr::left_join(tradedata, countrylabel, by = "partnerCode")
+
 ```
 
+The file trade data has now the following variables: 
+*`r names(tradedata)`*.
 
+## Step 4c: Merge product code with product label
 
-### **Step 4c: Merge product code with product label**
-*Add product code description (cmdCodeDescription) by looking up the commodity code (cmdCode) and matching it with the commodity code description (cmdCodeDescription) from productlabel.*
+*Add product code description (`cmdCodeDescription`) by looking up the commodity code (`cmdCode`) and matching it with the commodity code description (`cmdCodeDescription`) from productlabel.*
+
 *Add a flow code description (flowCode2) to assign flowCode "X" as "Export", and flowCode "M" as "Import".*
 
 *Hints: The "lookup" function has the following arguments lookup(x, key, value, nomatch=NA).*
@@ -144,50 +155,66 @@ tradedata <- dplyr::left_join(tradedata, countrylabel, by = "partnerCode")
 *Next generate a new variable using the 'mutate' function.*
   
 
-```{r}
+```{r CodeforTrade}
+## Suggesting using tidyverse
+# Joining products code to trade data with lables
+tradedata <- tradedata %>%
+  left_join(productlabel, by = "cmdCode") %>%
+   mutate(flowCode2 = ifelse(flowCode=="X", "Export", "Import"))
 
-tradedata <- tradedata %>% 
-  mutate(cmdCodeDescription = lookup(tradedata$cmdCode, productlabel$cmdCode, productlabel$cmdCodeDescription)) %>% 
-  mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import"))
+## Initial
+# tradedata <- tradedata %>% 
+#   mutate(cmdCodeDescription = lookup(tradedata$cmdCode, productlabel$cmdCode, productlabel$cmdCodeDescription)) %>% 
+#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import"))
 
 ```
 
 
+# Step 5: Create a  table of total trade flows in million US dollars.
 
-## **Step 5: Create a  table of total trade flows in million US dollars.**
 *Group data by trade flow (flowCode2). And then sum trade value (primaryValue) within each group.*
 
 *Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue and flowCode2. Remember to divide primaryValue by 1000000.*
 
-```{r}
-
-#Option 1
+```{r TableExportsGlobal}
+# Option 1
+# Computing total export and import values
 table1 <- tradedata %>% 
   group_by(flowCode2) %>% 
   summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE))
-print(table1)
 
+#Printing the table
+kable(table1)
+```
+
+
+```{r}
 #Option 2
-table1a <- xtabs(primaryValue~flowCode2, tradedata)/1000000
-format(table1a, big.mark=",")
+# table1a <- xtabs(primaryValue~flowCode2, tradedata)/1000000
+# format(table1a, big.mark=",")
+```
 
+
+```{r}
 #Option 3
-table1b <- rowsum(tradedata$primaryValue, tradedata$flowCode2)/1000000
-format(table1b, big.mark=",")
+# table1b <- rowsum(tradedata$primaryValue, tradedata$flowCode2)/1000000
+# format(table1b, big.mark=",")
 
 
 ```
 
-## **Step 6: Create a  table of trade flows by partner country, in million US dollars.**
+# Step 6: Create a  table of trade flows by partner country, in million US dollars.
+
 *Group data by partner country (geoAreaDescription) and trade flow (flowCode2). And then, sum up the trade value (primaryValue) within each group.*
 
-*Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
+*Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use `xtabs` function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
 
 *The initial table will arrange the partner country in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
 
 
-```{r}
+```{r TableValuesByCountry }
 #Option 1
+# Computing the values by country 
 table2 <- tradedata %>% 
   group_by(geoAreaDescription, flowCode2) %>% 
   summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE), .groups = "drop") %>% 
@@ -196,7 +223,10 @@ table2 <- tradedata %>%
               values_fill = 0) %>% 
   arrange(desc(Export))
 
-print(table2)
+#print(table2)
+
+kableExtra::kable(table2, digit=3, format.args = list(big.mark = ",")) %>%
+  kable_classic(full_width = F, html_font = "Arial")
 ```
 
 
