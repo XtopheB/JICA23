@@ -4,15 +4,15 @@ author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  word_document:
-    toc: no
-  pdf_document:
-    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
@@ -31,6 +31,9 @@ Download the latest trade data of **Indonesia** from the **Bulk file** in UN Com
 # Step 1: Install the appropriate R packages 
 
 *Install packages only once.*
+
+
+
 
 ```{r packages, include=FALSE}
 # List of the packages needed
@@ -65,14 +68,14 @@ for (pkg in Mypackages) {
 Comtradedata <- read.delim('Data/C_A_H6_360_2023.gz', header=TRUE)
 ```
 
-The original data set loaded has **`r nrow(Comtradedata)`** observations and  **`r ncol(Comtradedata)`** variables.
+The original data set loaded has **`r nrow(Comtradedata)`** observations and  **`r ncol(Comtradedata)`** variables. 
 
 
 # Step 3: Remove duplicates.
 
-*The full dataset of traded products is reported by 2-, 4-, and 6-digit Harmonized System (HS) code, by trade flow, and by mode of transport.* 
+*The full dataset of traded products is reported by 2-, 4-, and {{6-digit Harmonized System}} {(HS) code}, by trade flow, and by mode of transport.* 
 
-*To avoid duplicated values that will overestimate the total value of traded goods, create a subset that will include products with 6-digit HS code `(cmdCode>5)`, all modes of transport `(motCode==0),` and total export and import `(!="RM","RX")`.* 
+*To avoid duplicated values that will overestimate the total value of traded goods, create a subset that will include products with 6-digit HS code `(cmdCode>5)`, all modes of transport `(motCode==0)`, and total export and import `(!="RM","RX")`.* 
 
 *Also, retain only the columns to be used for this analysis, particularly "reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode", "CIFValue", "FOBValue", and "primaryValue".*
 
@@ -138,7 +141,8 @@ tradedata <- dplyr::left_join(tradedata, countrylabel, by = "partnerCode")
 ```
 
 The file trade data has now the following variables: 
-*`r names(tradedata)`*.
+
+- *`r names(tradedata)`*.
 
 ## Step 4c: Merge product code with product label
 
@@ -156,16 +160,20 @@ The file trade data has now the following variables:
   
 
 ```{r CodeforTrade}
-## Suggesting using tidyverse
-# Joining products code to trade data with lables
+## With tidyverse
+# Joining products code to trade data with labels
 tradedata <- tradedata %>%
   left_join(productlabel, by = "cmdCode") %>%
    mutate(flowCode2 = ifelse(flowCode=="X", "Export", "Import"))
 
-## Initial
-# tradedata <- tradedata %>% 
-#   mutate(cmdCodeDescription = lookup(tradedata$cmdCode, productlabel$cmdCode, productlabel$cmdCodeDescription)) %>% 
-#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import"))
+## Alternative similar to Excel
+# tradedata <- tradedata %>%
+#   mutate(cmdCodeDescription = 
+#            lookup(tradedata$cmdCode,
+#                   productlabel$cmdCode,
+#                   productlabel$cmdCodeDescription)) %>%
+#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import")
+#          )
 
 ```
 
@@ -220,7 +228,6 @@ table2 <- tradedata %>%
   summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE),
             .groups = "drop")
 
-# print(table2)
 
 # The table needs to be restructured by columns
 
@@ -230,8 +237,6 @@ table2 <- table2 %>%
   filter(Export >= 1000) %>%
   arrange(desc(Export)) %>%
   as.data.frame()
-
-
 
 # colnames(table2) <- c("Area", "flowCode2", "Value")
  
@@ -243,7 +248,8 @@ kableExtra::kable(table2, caption = "Exports and imports by country",
 
 
 ```{r table2a}
-#Option 2
+# Alternative computing
+
 # table2a <- xtabs(primaryValue~geoAreaDescription + flowCode2, tradedata)/1000000
 # 
 # table2a <- data.frame(table2a)
@@ -283,7 +289,7 @@ tradedata <- tradedata %>%
   ) %>%
   rename(cmd2CodeDescription = cmdCodeDescription.y)  ## <- need to explain this....
 
-# OLD
+# Alternative
 # tradedata<- tradedata %>% 
 #   mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
 
@@ -319,7 +325,7 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 
 
 ```{r}
-#Option 2
+# Alternative
 # table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
 # table3a <- data.frame(table3a)
 # colnames(table3a) <- c("Product", "flowCode2", "Value")
@@ -330,7 +336,6 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 # kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
 #   kable_classic(full_width = F, html_font = "Arial")
 ```
-
 
 
 # Step 8: Data visualization
@@ -488,7 +493,10 @@ sn
 
 # ASSIGNMENT
 
-*Replicate all steps using your country data. You can download your country data from GIGAPOD. Submit a PDF or html version of the R Markdown. Deadline is on July 10 (Friday)*
+*Replicate all steps using your country data. You can download your country data from GIGAPOD.* 
+
+>Submit a html or pdf version of the output of your R Markdown file.
+Deadline is on **July 10** (Friday)
 
 
 
