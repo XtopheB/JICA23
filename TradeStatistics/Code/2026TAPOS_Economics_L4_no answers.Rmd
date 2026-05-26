@@ -1,19 +1,21 @@
 ---
-title: " International Merchandise Trade Statistics hands-on exercise"
-author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
+title: "International Merchandise Trade Statistics hands-on exercise"
+author: "Chesca Rosales and Christophe Bontemps, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
+
 output:
-  pdf_document:
-    toc: yes
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
+  pdf_document:
+    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
+
 ---
 
 
@@ -32,9 +34,6 @@ Download the latest trade data of **Indonesia** from the **Bulk file** in UN Com
 
 *Install packages only once.*
 
-
-
-
 ```{r packages, include=FALSE}
 # List of the packages needed
 Mypackages <- c(
@@ -52,6 +51,7 @@ for (pkg in Mypackages) {
   library(pkg, character.only = TRUE)
   cat("✓", pkg, "\n")
 }
+
 ```
 
 
@@ -61,11 +61,17 @@ for (pkg in Mypackages) {
 
 *Hints: If not all columns are filled up (e.g., FOB value is blank in some rows), there might be an error when using read.table.*
 *The error will state that a certain line does not have the same number of elements as the column header.* 
-*Try using read.delim instead of read.table. The 'header' argument indicates whether the file contains the names of the variables as its first line. If this argument is not included, the default format follows the file format.* 
-*Set header = TRUE if and only if the first row contains one fewer element than the number of columns.*
+
+*Try using `read.delim()`, instead of read.table, using the following syntax: `Comtradedata <- read.delim('../Data/XXXXXX.gz', header=XXXX)`*
+
+1. *Replace the file name.*
+
+2. *The 'header' argument indicates whether the file contains the names of the variables as its first line. If this argument is not included, the default format follows the file format. Set header = TRUE if and only if the first row contains one fewer element than the number of columns.*
+
 
 ```{r Importdata }
-Comtradedata <- read.delim('../Data/C_A_H6_360_2023.gz', header=TRUE)
+Comtradedata <- read.delim('', header=)
+
 ```
 
 The original data set loaded has **`r nrow(Comtradedata)`** observations and  **`r ncol(Comtradedata)`** variables. 
@@ -80,18 +86,20 @@ The original data set loaded has **`r nrow(Comtradedata)`** observations and  **
 *Also, retain only the columns to be used for this analysis, particularly "reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode", "CIFValue", "FOBValue", and "primaryValue".*
 
 *Hints: Create a subset titled "tradedata" in order to preserve the original dataset. There are different functions to drop rows depending on the conditions set.*
+*One option is to use `filter()` function.*
 
 ```{r tradedata}
 tradedata <- Comtradedata %>%
-  filter(nchar(cmdCode)>5 &
-           motCode==0 &
-           !flowCode %in% c("RM","RX") &
-           partnerCode!=0) %>%
-  select("reporterCode", "flowCode", "partnerCode", "cmdCode", "motCode",
-         "CIFValue", "FOBValue", "primaryValue")
+  filter(nchar(cmdCode)> &
+           motCode== &
+           !flowCode %in% c(" "," ") &
+           partnerCode!= ) %>%
+  select( )
+
 ```
 
 The new data set created has now **`r nrow(tradedata)`** observations and only **`r ncol(tradedata)`** variables
+
 
 # Step 4: Add country and product descriptions.
 
@@ -104,15 +112,20 @@ The new data set created has now **`r nrow(tradedata)`** observations and only *
 
 *The reference source for these are [ComtradePlus_DataItems.xlsx](https://comtradeapi.un.org/files/v1/app/wiki/ComtradePlus_DataItems.xlsx) and [HSCodeandDescription.xlsx](https://unstats.un.org/unsd/classifications/Econ/download/In%20Text/HSCodeandDescription.xlsx).*
 
-*Hints: Rename the column of "Country and regional labels" to "partnerCode", "geoAreaDescription", "regional grouping" for consistency with the COMTRADE file.*
-*Rename as well the columns of "HSCodeandDescription" to "cmdCode" and "cmdCodeDescription".*
+*Hints: 
+
+1. *Use `read_excel()`as follows: `countrylabel <- readxl::read_excel(path)`.*
+2. *Rename the column of "Country and regional labels" to "partnerCode", "geoAreaDescription", "regional grouping" for consistency with the COMTRADE file.*
+3. *Set the right type for partnercode by converting it to integer using the `as.integer()` function.*
+4. *Use `read_excel()`as follows: `productlabel <- readxl::read_excel(path, sheet = "XXX", range = cell_cols("X:X"))`.*
+5. *Rename the columns of "HSCodeandDescription" to "cmdCode" and "cmdCodeDescription".*
 
 ```{r countries}
 # Importing Countries
-countrylabel <- readxl::read_excel("../Data/Country and regional labels.xlsx")
+countrylabel <- readxl::read_excel("../Data/...xslx")
 
 # Labeling the variables
-colnames(countrylabel) <- c("partnerCode", "geoAreaDescription", "regional grouping")
+colnames(countrylabel) <- c( )
 
 # Setting the right type for partnercode
 countrylabel <- countrylabel %>%
@@ -120,23 +133,25 @@ countrylabel <- countrylabel %>%
 
 ```
 
-
-```{r Labels}
+```{r labels}
 # Importing Labels
-productlabel <- readxl::read_excel("../Data/HSCodeandDescription.xlsx", sheet = "HS22", range = cell_cols("B:C")) 
+productlabel <- readxl::read_excel("../Data/...xlsx", sheet = " ", range = cell_cols(" ")) 
 
-colnames(productlabel) <- c("cmdCode", "cmdCodeDescription")
+colnames(productlabel) <- c( )
+
 ```
+
 
 ## Step 4b: Add country names using partnerCode
 
 *Two columns will be added in tradedata to include the country description  and product description. Add country description my looking up the country description (partnerCode) in tradedata and matching it with the partnerCode in countrylabel, and retrieving its corresponding geoAreaDescription.*
 
-*Hints: The "left_join" function reads the partnerCode in tradedata, and matching the partnerCode with the geoAreaDescription from countrylabel (i.e., the ComtradePlus Reference Countries file). There are other possible functions to do the matching, such as lookup and merge.*
+*Hints: The `left_join` function reads the partnerCode in tradedata, and matching the partnerCode with the geoAreaDescription from countrylabel (i.e., the ComtradePlus Reference Countries file). There are other possible functions to do the matching, such as lookup and merge.*
 
+*The `left_join` function has the following arguments: `tradedata <- dplyr::left_join(dataframe_left, dataframe_right, by = "id")`.*
 
 ```{r join}
-tradedata <- dplyr::left_join(tradedata, countrylabel, by = "partnerCode")
+tradedata <- 
 
 ```
 
@@ -144,36 +159,38 @@ The file trade data has now the following variables:
 
 - *`r names(tradedata)`*.
 
+
 ## Step 4c: Merge product code with product label
 
 *Add product code description (`cmdCodeDescription`) by looking up the commodity code (`cmdCode`) and matching it with the commodity code description (`cmdCodeDescription`) from productlabel.*
 
-*Add a flow code description (flowCode2) to assign flowCode "X" as "Export", and flowCode "M" as "Import".*
+*The function `left_join` can be used in a pipeline as follows: `tradedata <- tradedata %>% left_join(dataframe_right, by = "id")`.* 
+*Using a `mutate` function, add a flow code description (flowCode2) to assign flowCode "X" as "Export", and flowCode "M" as "Import". `mutate` has the following arguments `tradedata <- tradedata %>% mutate(flowCode2 = ifelse(flowCode == "X", "", ""))`.*
 
-*Hints: The "lookup" function has the following arguments lookup(x, key, value, nomatch=NA).*
-  *x refers to vector of values to lookup, in this case the commodity code cmdCode in the tradedata data frame.*
-  *key refers to the reference vector to be searched, in this case the cmdCode in the productlabel data frame.*
-  *value refers to the vector of values to be returned*
-  *nomatch refers to the value to be returned when no match is found.*
-
-*Next generate a new variable using the 'mutate' function.*
-  
 
 ```{r CodeforTrade}
 ## With tidyverse
 # Joining products code to trade data with labels
 tradedata <- tradedata %>%
-  left_join(productlabel, by = "cmdCode") %>%
-   mutate(flowCode2 = ifelse(flowCode=="X", "Export", "Import"))
+ 
+  
+```
 
-## Alternative similar to Excel
-# tradedata <- tradedata %>%
-#   mutate(cmdCodeDescription = 
-#            lookup(tradedata$cmdCode,
-#                   productlabel$cmdCode,
-#                   productlabel$cmdCodeDescription)) %>%
-#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import")
-#          )
+*An alternative function is the `lookup`, which has the following arguments `lookup(x, key, value, nomatch=NA)`.*
+  *x refers to vector of values to lookup, in this case the commodity code `cmdCode` in the tradedata data frame.*
+  *key refers to the reference vector to be searched, in this case the `cmdCode` in the productlabel data frame.*
+  *value refers to the vector of values to be returned*
+  *nomatch refers to the value to be returned when no match is found.*
+  
+```{r AlternativeCodeforTrade}
+
+
+
+
+
+
+
+
 
 ```
 
@@ -182,119 +199,128 @@ tradedata <- tradedata %>%
 
 *Group data by trade flow (flowCode2). And then sum trade value (primaryValue) within each group.*
 
-*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue and flowCode2. Remember to divide primaryValue by 1000000.*
+*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value.*
 
-```{r TableExportsGlobal}
-# Option 1
+*`group_by("id")`*
+
+*`summarise(variable = sum("id", na.rm = TRUE))`*
+
+```{r TableTotalTradeAlternative}
 # Computing total export and import values
 table1 <- tradedata %>% 
-  group_by(flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE))
+  group_by( ) %>% 
+  summarise( , na.rm= ))
 
 #Printing the table
-kable(table1)
-```
-
-
-```{r}
-#Option 2
-# table1a <- xtabs(primaryValue~flowCode2, tradedata)/1000000
-# format(table1a, big.mark=",")
-```
-
-
-```{r}
-#Option 3
-# table1b <- rowsum(tradedata$primaryValue, tradedata$flowCode2)/1000000
-# format(table1b, big.mark=",")
-
+kableExtra::kable(table1, caption = "Exports and imports by country", 
+                  digit=3, format.args = list(big.mark = ",") ) %>%
+  kable_classic(full_width = F, html_font = "Arial")
 
 ```
+
+*Another option is to use `xtabs` function showing a cross tabulation of primaryValue and flowCode2. The `xtabs()` function has the following arguments: `xtabs(variable1~variable2, dataframe)`.*
+*Remember to divide primaryValue by 1000000.*
+
+```{r AlternativeTableTotalTrade}
+
+
+
+
+
+
+
+
+```
+
 
 # Step 6: Create a  table of trade flows by partner country, in million US dollars.
 
 *Group data by partner country (geoAreaDescription) and trade flow (flowCode2). And then, sum up the trade value (primaryValue) within each group.*
 
-*Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use `xtabs` function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
+*Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. *
+
+*`group_by("id1", "id2")`*
+
+*`summarise(variable = sum("id", na.rm = TRUE))`*
 
 *The initial table will arrange the partner country in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
 
-
 ```{r TableValuesByCountry }
-#Option 1
 # Computing the values by country using group_by
 table2 <- tradedata %>% 
-  group_by(geoAreaDescription, flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE),
+  group_by( ) %>% 
+  summarise( , na.rm= ),
             .groups = "drop")
 
-
-# The table needs to be restructured by columns
+# Restructuring the table into wide format
 
 table2 <- table2 %>%
   rename(Area = geoAreaDescription) %>%
-  pivot_wider(names_from = flowCode2, values_from = total_trade_value) %>%
-  filter(Export >= 1000) %>%
+  pivot_wider(names_from =  , values_from =  ) %>%
+  filter(Export >=  ) %>%
   arrange(desc(Export)) %>%
   as.data.frame()
 
 # colnames(table2) <- c("Area", "flowCode2", "Value")
  
-# Nice printing of the table
+# Printing the table
 kableExtra::kable(table2, caption = "Exports and imports by country", 
                   digit=3, format.args = list(big.mark = ",") ) %>%
   kable_classic(full_width = F, html_font = "Arial")
-```
-
-
-```{r table2a}
-# Alternative computing
-
-# table2a <- xtabs(primaryValue~geoAreaDescription + flowCode2, tradedata)/1000000
-# 
-# table2a <- data.frame(table2a)
-# colnames(table2a) <- c("Area", "flowCode2", "Value")
-# 
-# table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
-#   filter(Export>=1000) %>%
-#   as.data.frame() %>% arrange(desc(Export))
-# # 
-# # kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
-#   kable_classic(full_width = F, html_font = "Arial")
 
 ```
 
+*Another option is to use `xtabs` function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. The `xtabs()` function has the following arguments: `xtabs(variable1~variable2+variable3, dataframe)`.*
+*Remember to divide primaryValue by 1000000.*
+
+```{r AlternativeTableValuesByCountry}
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
 
 
 # Step 7: Create a  table of trade flows in million US dollars, by 2-digit HS code.
 
 ## Step 7a: Add two columns showing the 2-digit HS code and description of each commodity.
 
-*Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. Add another column for commodity code description (cmd2Code) by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel\$cmdCode) and matching it with the commodity code description column in the productlabel dataframe (productlabel\$cmdCodeDescription).*
-
+*Create a column for the 2-digit HS code by extracting the first two characters of the cmdCode column in the tradedata dataframe. The `str_extract()` function can be used with using a pattern "^.{2}".*
+*Next, the `left_join` function can be applied, with the arguments `tradedata <- tradedata %>% left_join(dataframe_right, by = "id")`.*
 
 ```{r 2-digits}
 # Extracting the first two digits of Code in a new variable
 tradedata <- tradedata %>% 
-  mutate(cmd2Code = str_extract(cmdCode, "^.{2}"))
-```
+  mutate(cmd2Code =  )
 
+```
 
 ```{r Join2digits}
 # Joining Tradedata and Codedescription
 
 tradedata <- tradedata %>%
-  left_join(
-    productlabel, by = c("cmd2Code" = "cmdCode")
+  
   ) %>%
   rename(cmd2CodeDescription = cmdCodeDescription.y)  ## <- need to explain this....
-
-# Alternative
-# tradedata<- tradedata %>% 
-#   mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
-
 ```
 
+*An alternative way to add the 2-digit commodity code description (cmd2Code) is by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel\$cmdCode) and retrieving the corresponding commodity code description in the productlabel dataframe (productlabel\$cmdCodeDescription).*
+
+```{r AlternativeJoin2digits}
+
+
+
+
+```
 
 
 ## Step 7b: Create a  table of trade flows in million US dollars, by 2-digit HS code.
@@ -302,17 +328,16 @@ tradedata <- tradedata %>%
 *Group data by commodity code description (cmd2CodeDescription) and trade flow (flowCode2). Sum trade value (primaryValue) within each group.*
 *The initial table will arrange the commodity code description in alphabetical order. If you want to show the summary table in descending order of export value, pivot the table to be wider, then arrange in descending order of Exports.*
 
-*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. Another option is to use xtabs function showing a cross tabulation of primaryValue, geoAreaDescription and flowCode2. Remember to divide primaryValue by 1000000.*
-
+*Hint: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. *
 
 ```{r TableValuebyProduct }
-#Option 1
+#Computing the values by product classification using group_by
 table3 <- tradedata %>% 
-  group_by(cmd2CodeDescription, flowCode2) %>% 
-  summarise(total_trade_value = sum(primaryValue/1000000, na.rm=TRUE),
+  group_by( ) %>% 
+  summarise( , na.rm= ),
             .groups = "drop") %>% 
-  pivot_wider(names_from = flowCode2, 
-              values_from = total_trade_value,
+  pivot_wider(names_from =  , 
+              values_from =  ,
               values_fill = 0) %>% 
   slice_max(n=20, order_by=Export) %>%
   arrange(desc(Export))
@@ -321,20 +346,24 @@ table3 <- tradedata %>%
 kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)", 
                   digit=3, format.args = list(big.mark = ",") ) %>%
   kable_classic(full_width = F, html_font = "Arial")
+
 ```
 
+*Another option is to use `xtabs` function showing a cross tabulation of primaryValue, cmd2CodeDescription and flowCode2. The `xtabs()` function has the following arguments: `xtabs(variable1~variable2+variable3, dataframe)`.*
+*Remember to divide primaryValue by 1000000.*
 
-```{r}
-# Alternative
-# table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
-# table3a <- data.frame(table3a)
-# colnames(table3a) <- c("Product", "flowCode2", "Value")
-# #table3$Product <- substr(table3$Product, 1, 50)
-# 
-# table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export)
-# 
-# kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
-#   kable_classic(full_width = F, html_font = "Arial")
+```{r AlternativeTableValuebyProduct}
+
+
+
+
+
+
+
+
+
+
+
 ```
 
 
@@ -345,21 +374,21 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 *Using ggplot, create a bar chart of table 1, where trade flow (flowCode2) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
 
 *Hints: The ggplot function has the following syntax: ggplot(dataframe, aes()). Use table1 as the dataframe, and assign the x-axis and y-axis in the aesthetic mapping (aes(x=. , y =. ))*
-*Add layers to the ggplot. 1) Change the color of the bar chart by using geom_col(fill = ".")*
-*2) Add labels to the chart by using labs(title = ".", x=".", y=".")*
-*3) Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
-*4) Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
+*Add layers to the ggplot.*
 
+1. *Change the color of the bar chart by using geom_col(fill = ".")*
+2. *Add labels to the chart by using labs(title = ".", x=".", y=".")*
+3. *Add value as label for each bar by using geom_text(aes(label=comma(total_trade_value)))*
+4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
 
 ```{r BarGlobal}
-ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
+ggplot( , aes(x= , y=  )) +
   geom_col(fill = "steelblue") +
   labs(title = "Total trade flows of Indonesia in 2023, in million US dollars",
        x = "Category", y = "Values") +
-  geom_text(aes(label=comma(total_trade_value)), vjust=-0.3) +
+  geom_text(aes(label=comma( )), vjust=-0.3) +
   theme_minimal()
 ```
-
 
 
 ## Step 8b: Create a bar chart for trade flows of Indonesia by country partner in million US dollars.
@@ -377,12 +406,11 @@ ggplot(table1, aes(x=flowCode2, y=total_trade_value )) +
 3. *Add value as label for each bar by using* `geom_text(aes(label=comma(total_trade_value)))`
 4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance,* `theme_minimal()` , `theme_bw()`, etc.
 
-
 ```{r BarFlowsCountries}
 # Rearranging the data 
 table2_long <- table2 %>% 
   slice_max(order_by = Export, n=10) %>% 
-  pivot_longer( cols = c(Export, Import), names_to = "trade_flow", values_to = "total_trade_value") %>%
+  pivot_longer(cols = c( ,  ), names_to = " ", values_to = " ") %>%
   arrange(desc(total_trade_value))
   
 
@@ -402,7 +430,6 @@ ggplot(table2_long, aes(x=fct_reorder(Area, total_trade_value, sum),
 ```
 
 
-
 ## Step 8c: Create a bar chart for trade flows of Indonesia by top commodity traded, in million US dollars.
 
 *Using ggplot, create a bar chart of table 3, where commodity description (cmd2CodeDescription) is in the x-axis, and trade value (total_trade_value) is in the y-axis.*
@@ -411,13 +438,13 @@ ggplot(table2_long, aes(x=fct_reorder(Area, total_trade_value, sum),
 *Use the ggplot function with table3_long as the dataframe, and assign the x-axis (cmd2CodeDescription), y-axis (total_trade_value), and fill (trade_flow) in the aesthetic mapping `(aes(x=. , y =. , fill=.))`.*
 
 *Add layers to the ggplot*. 
+
 1.  `geom_col` *is used to adjust the height of the bar to represent values in the data. Specify the position of the bars to push overlapping bars away from each other by using `geom_col(position = position_dodge(width=0.9))`*
 
 2. *Add labels to the chart by using `labs(title = ".", x=".", y=".")`*
 3. *Add value as label for each bar by using `geom_text(aes(label=comma(total_trade_value)))`*
 4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, `theme_minimal()`, `theme_bw()`, etc.*
 5. *Truncate the x-axis label and wrap the text by using scale_x_discrete(label = function(x) str_wrap(str_trunc(x, 60), width = 30)) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))*
-
 
 ```{r BarFlowsProducts}
 export_order <- table3 %>% 
@@ -447,7 +474,6 @@ ggplot(table3_long, aes(x=fct_reorder(cmd2CodeDescription, total_trade_value, su
   coord_flip() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
-
 
 
 ## BONUS: DATA VISUALIZATION
@@ -497,6 +523,5 @@ sn
 
 >Submit a html or pdf version of the output of your R Markdown file.
 Deadline is on **July 10** (Friday)
-
 
 
