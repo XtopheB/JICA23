@@ -4,13 +4,13 @@ author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  pdf_document:
-    toc: yes
   word_document:
     toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
@@ -263,8 +263,8 @@ ggplot(df, aes(x = wmweight)) +
   labs(
     title = "Distribution of Sampling Weights",
     x = "Sampling Weight",
-    y = "Frequency"
-  ) +
+    y = "Frequency", 
+   caption = paste0("Source: MICS - ", country,", (", year,")")  ) +
   theme_minimal()
 ```
 
@@ -292,8 +292,9 @@ ggplot(df, aes(x = WAGEM)) +
     title = "Age at First Marriage",
     x = "Age at first marriage",
     y = "Frequency",
-    caption = paste0("Nb of respondants =", nrow(df))
-  ) +
+    caption = paste0("Source: MICS - ", country,", (", year,")",
+     " - Nb of respondants =", nrow(df) ) 
+    ) +
   theme_minimal()
 ```
 
@@ -370,7 +371,7 @@ sdg_5_3_1_location <- wm_20_24 %>%
 # Making a nice table
 kable(sdg_5_3_1_location,
       digits = 1, 
-      caption = paste0("SDG 5.3.1 by Area - ",country,", (", year,")"))
+      caption = paste0("SDG 5.3.1 by Area - ",country," (", year,")"))
 ```
 
 ## Convert Proportions to Percentages ?????? <<- Why? 
@@ -396,9 +397,9 @@ ggplot()+
     color = "white" ) +
   labs(
     title = "SDG 5.3.1 by Location",
-    x = "Location (1 = Urban, 2 = Rural)",
-    y = "Percent", 
-    caption = paste0("Report for ",country,"(", year, ")"),
+    x = "Location ",
+    y = "SDG 5.3.1 (in %)", 
+    caption = paste0("Report for ",country," (", year, ")"),
   ) +
   coord_flip() +
   theme_minimal()
