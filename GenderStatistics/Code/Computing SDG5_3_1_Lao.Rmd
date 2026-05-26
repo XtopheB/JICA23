@@ -4,18 +4,25 @@ author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: yes
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
+  pdf_document:
+    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
+
+```{r setup, include=FALSE}
+# We define the options for the chunks globaly here
+
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+
+```
 
 # Introduction
 
@@ -34,7 +41,9 @@ The tutorial introduces a simple workflow for:
 - visualizing the data,
 - and exporting results.
 
-# 1. Load Required Packages
+# Step 1: Install the appropriate R packages 
+
+*Install packages only once.*
 
 We first load the packages needed for this exercise.
 
@@ -43,10 +52,10 @@ The package `haven` is used to import SPSS files (`.sav`), while `tidyverse` pro
 *Hint:* we use here a package manager `pacman` (another package). Once installed and loaded, it can facilitate the use of a list of packages  
 
 ```{r packages}
-# Weuse packman here 
-install.packages("pacman")
-library(pacman)
+# We use pacman here 
+# install.packages("pacman")  # <-- Run only once
 
+library(pacman)
 pacman::p_load(
   haven,
   tidyverse
@@ -55,45 +64,27 @@ pacman::p_load(
 
 # 2. Define File Paths
 
-It is good practice to define folders where your outputs will be stored. .
+It is good practice to define folders where your outputs will be stored. 
 
 ```{r}
 
-input = file.path(base_path, "Data")
-outputFolder = file.path(base_path, "Output")
+# input = file.path(base_path, "Data")
+# outputFolder = file.path(base_path, "Output")
 ```
 
 # 3. Import the Data
 
-The women's questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
+The questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
 
-```{r}
-df <- read_spss(file.path(input, "wm.sav"), user_na = TRUE)
+```{r import}
+#Create a data frame called df which stores the MICS data
+rawdf <- read_spss("../Data/wm.sav")
 ```
 
 # 4. Explore the Dataset
 
-This dataset contains information collected from women interviewed during the survey.
+This dataset contains information collected from women interviewed during the survey. it has `r nrow(df)` observations and `r ncol(df)` variables 
 
-The following chunk computes the number of observations (rows) and variables (columns) in the dataset.
-
-```{r}
-nrow(df)
-
-ncol(df)
-```
-
-We can also display both values together.
-
-```{r}
-cat(
-  "The dataset contains",
-  nrow(df),
-  "observations and",
-  ncol(df),
-  "variables."
-)
-```
 
 Although the dataset contains many variables, we only need a few for this computation:
 
@@ -102,52 +93,78 @@ Although the dataset contains many variables, we only need a few for this comput
 | WM17 | Interview completion status |
 | WB4 | Age of woman |
 | WAGEM | Age at first marriage |
+| HH6 |  Area of residence    |
 | wmweight | Sampling weight |
+
+
+##  Suggestion for Sinovia
+ > Let us select the variable of interest in a new, smaller data set
+ 
+```{r}
+df <- rawdf %>%
+  select(WM17, WB4, WAGEM,HH6, wmweight)
+
+```
+ 
 
 # 5. Explore Variable Structure
 
-## Check Variable Classes
+## Check Variable Classes for WB4 and WAGEM
 
-```{r}
-class(df$WB4)
-
-class(df$WAGEM)
+```{r type}
+df %>% 
+  select(WB4, WAGEM) %>% 
+  map(class)
 ```
 
-## Display Dataset Structure
+## Display an overview of the data
 
-```{r}
-glimpse(df)
+```{r head}
+head(df)
 ```
 
 ## List Variable Names
 
-```{r}
-names(df)
-```
+We have here `r ncol(df)` variables: *`r names(df)`*
 
 # 6. Explore Interview Status
 
-The variable `WM17` indicates the completion status of the interview.
+The variable `WM17` indicates the completion status of the interview. We may want to check the number of successful interviews
 
-```{r}
+```{r InfoInterview }
 str(df$WM17)
+```
 
+
+```{r taleInterview}
 table(df$WM17)
 ```
 
 ## Bar Chart of Interview Status
 
-```{r}
+```{r BarInterview}
 df %>%
-  count(WM17) %>%
-  ggplot(aes(x = factor(WM17), y = n)) +
-  geom_col() +
+  count(WM17) %>%  # We use the count function to have the values
+  mutate(
+    pct = n / sum(n) * 100,
+    label = paste0(round(pct, 1), "%")
+  ) %>%
+  ggplot(aes(x = "", y = n, fill = factor(WM17))) +
+  geom_col(width = 0.3) +
+  geom_text(
+    data = \(x) filter(x, WM17 == 1),
+    aes(label = label),
+    position = position_stack(vjust = 0.5),
+    color = "white"
+  ) +
+  coord_flip() +
   labs(
     title = "Interview Status",
-    x = "WM17",
-    y = "Number of Women"
+    x = "",
+    y = "Number of Women",
+    fill = "WM17"
   ) +
+  
   theme_minimal()
 ```
 
@@ -155,17 +172,24 @@ df %>%
 
 ## Summary Statistics
 
-```{r}
-summary(df$WB4)
+```{r summaryAge}
 
-range(df$WB4, na.rm = TRUE)
+
+df %>% 
+  select(WB4) %>% 
+  summary()
+
+# summary(df$WB4)
+
 ```
 
 ## Histogram of Women's Age
 
-```{r}
-ggplot(df, aes(x = WB4)) +
-  geom_histogram(binwidth = 1) +
+```{r HistAge}
+df %>%
+ggplot() +
+  aes(x = WB4) +
+  geom_histogram(binwidth = 1, fill = "lightblue") +
   labs(
     title = "Distribution of Women's Age",
     x = "Age",
@@ -186,7 +210,9 @@ summary(df$wmweight)
 
 ```{r}
 ggplot(df, aes(x = wmweight)) +
-  geom_histogram(bins = 30) +
+  geom_histogram(bins = 30 ,
+                 fill = "lightgrey", 
+                 colour = "white") +
   labs(
     title = "Distribution of Sampling Weights",
     x = "Sampling Weight",
@@ -205,7 +231,16 @@ summary(df$WAGEM)
 
 ```{r}
 ggplot(df, aes(x = WAGEM)) +
-  geom_histogram(binwidth = 1) +
+  geom_histogram(binwidth = 1,
+                 fill = "pink", 
+                 colour = "white") +
+  geom_vline(xintercept = 16,
+             colour = "darkred",
+             linewidth =1) +
+  annotate("text", x = 9, y = 1800,
+           label = "Child marriage if <16",
+           color = "darkred",
+           size = 4)+
   labs(
     title = "Age at First Marriage",
     x = "Age",
