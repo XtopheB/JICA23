@@ -1,0 +1,333 @@
+---
+title: "Computing SDG 5.3.1 Using MICS Data in R"
+author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
+subtitle: '*A simple report*'
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+    code_download: true
+always_allow_html: true  # <-- bypass errors caused by interactive HTML
+---
+
+
+# Introduction
+
+This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for Lao PDR (2023).
+
+SDG 5.3.1 measures:
+
+> *The proportion of women aged 20–24 years who were first married or in union before age 18.*
+
+The tutorial introduces a simple workflow for:
+- importing survey data,
+- exploring variables,
+- filtering the relevant population,
+- calculating weighted indicators,
+- producing disaggregated estimates,
+- visualizing the data,
+- and exporting results.
+
+# 1. Load Required Packages
+
+We first load the packages needed for this exercise.
+
+The package `haven` is used to import SPSS files (`.sav`), while `tidyverse` provides tools for data manipulation, visualization, and analysis.
+
+*Hint:* we use here a package manager `pacman` (another package). Once installed and loaded, it can facilitate the use of a list of packages  
+
+```{r packages}
+# Weuse packman here 
+install.packages("pacman")
+library(pacman)
+
+pacman::p_load(
+  haven,
+  tidyverse
+)
+```
+
+# 2. Define File Paths
+
+It is good practice to define folders where your outputs will be stored. .
+
+```{r}
+
+input = file.path(base_path, "Data")
+outputFolder = file.path(base_path, "Output")
+```
+
+# 3. Import the Data
+
+The women's questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
+
+```{r}
+df <- read_spss(file.path(input, "wm.sav"), user_na = TRUE)
+```
+
+# 4. Explore the Dataset
+
+This dataset contains information collected from women interviewed during the survey.
+
+The following chunk computes the number of observations (rows) and variables (columns) in the dataset.
+
+```{r}
+nrow(df)
+
+ncol(df)
+```
+
+We can also display both values together.
+
+```{r}
+cat(
+  "The dataset contains",
+  nrow(df),
+  "observations and",
+  ncol(df),
+  "variables."
+)
+```
+
+Although the dataset contains many variables, we only need a few for this computation:
+
+| Variable | Description |
+|---|---|
+| WM17 | Interview completion status |
+| WB4 | Age of woman |
+| WAGEM | Age at first marriage |
+| wmweight | Sampling weight |
+
+# 5. Explore Variable Structure
+
+## Check Variable Classes
+
+```{r}
+class(df$WB4)
+
+class(df$WAGEM)
+```
+
+## Display Dataset Structure
+
+```{r}
+glimpse(df)
+```
+
+## List Variable Names
+
+```{r}
+names(df)
+```
+
+# 6. Explore Interview Status
+
+The variable `WM17` indicates the completion status of the interview.
+
+```{r}
+str(df$WM17)
+
+table(df$WM17)
+```
+
+## Bar Chart of Interview Status
+
+```{r}
+df %>%
+  count(WM17) %>%
+  ggplot(aes(x = factor(WM17), y = n)) +
+  geom_col() +
+  labs(
+    title = "Interview Status",
+    x = "WM17",
+    y = "Number of Women"
+  ) +
+  theme_minimal()
+```
+
+# 7. Explore Age Variables
+
+## Summary Statistics
+
+```{r}
+summary(df$WB4)
+
+range(df$WB4, na.rm = TRUE)
+```
+
+## Histogram of Women's Age
+
+```{r}
+ggplot(df, aes(x = WB4)) +
+  geom_histogram(binwidth = 1) +
+  labs(
+    title = "Distribution of Women's Age",
+    x = "Age",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+# 8. Explore Sampling Weights
+
+Sampling weights are used to produce representative estimates at the national level.
+
+```{r}
+summary(df$wmweight)
+```
+
+## Distribution of Sampling Weights
+
+```{r}
+ggplot(df, aes(x = wmweight)) +
+  geom_histogram(bins = 30) +
+  labs(
+    title = "Distribution of Sampling Weights",
+    x = "Sampling Weight",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+# 9. Explore Age at First Marriage
+
+```{r}
+summary(df$WAGEM)
+```
+
+## Histogram of Age at First Marriage
+
+```{r}
+ggplot(df, aes(x = WAGEM)) +
+  geom_histogram(binwidth = 1) +
+  labs(
+    title = "Age at First Marriage",
+    x = "Age",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+```
+
+# 10. Select the Population of Interest
+
+SDG 5.3.1 is calculated for women aged **20–24 years** who completed the interview.
+
+```{r}
+wm_20_24 <- df %>%
+  filter(
+    WM17 == 1,
+    WB4 >= 20,
+    WB4 < 25
+  )
+```
+
+We can compute the number of women included in the analysis.
+
+```{r}
+nrow(wm_20_24)
+```
+
+# 11. Compute SDG 5.3.1
+
+The indicator is calculated as:
+
+$$
+\text{SDG 5.3.1} =
+\frac{\text{Women married before age 18}}
+{\text{Total women aged 20–24}}
+\times 100
+$$
+
+Because MICS is a sample survey, we use the sampling weights (`wmweight`) in both the numerator and denominator.
+
+```{r}
+sdg_5_3_1 <- wm_20_24 %>%
+  summarise(
+    indicator = "SDG 5.3.1",
+    denominator = sum(wmweight, na.rm = TRUE),
+    numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
+    SDG_5_3_1    = 100 * numerator / denominator
+  )
+
+sdg_5_3_1
+```
+
+# 12. Disaggregation by Location
+
+Indicators are often disaggregated to study inequalities between groups.
+
+Here we calculate SDG 5.3.1 separately for urban and rural areas.
+
+```{r}
+sdg_5_3_1_location <- wm_20_24 %>%
+  group_by(HH6) %>%
+  summarise(
+    denominator = sum(wmweight, na.rm = TRUE),
+    numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
+    proportion  = numerator / denominator
+  )
+
+sdg_5_3_1_location
+```
+
+## Convert Proportions to Percentages
+
+```{r}
+sdg_5_3_1_location <- sdg_5_3_1_location %>%
+  mutate(proportion = proportion * 100)
+
+sdg_5_3_1_location
+```
+
+# 13. Visualize Urban and Rural Differences
+
+```{r}
+ggplot(
+  sdg_5_3_1_location,
+  aes(x = factor(HH6), y = proportion)
+) +
+  geom_col() +
+  labs(
+    title = "SDG 5.3.1 by Location",
+    x = "Location (1 = Urban, 2 = Rural)",
+    y = "Percent"
+  ) +
+  theme_minimal()
+```
+
+# 14. Export the Results
+
+The final results are saved as a CSV file.
+
+```{r}
+results <- sdg_5_3_1 %>%
+  mutate(
+    country = "Lao PDR",
+    year = 2023,
+    unit = "Percent"
+  )
+
+write_csv(results, file.path(output, "SDG_5_3_1_results.csv"))
+```
+
+# Conclusion
+
+This tutorial illustrated a complete workflow for computing an SDG indicator using household survey microdata in R.
+
+The workflow included:
+- importing SPSS data,
+- exploring variables,
+- producing descriptive statistics,
+- visualizing distributions,
+- filtering the target population,
+- calculating weighted indicators,
+- producing disaggregated estimates,
+- and exporting the results.
+
+The same general approach can be adapted to many other SDG indicators derived from survey data.

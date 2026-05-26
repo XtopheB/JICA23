@@ -45,6 +45,7 @@ _rsconnect/
 /learnR_data/
 /Data/
 /CreatedData/
+/Apps/ParallelPlotApp/*
 
 # Temporary files created by R markdown
 *.utf8.md
