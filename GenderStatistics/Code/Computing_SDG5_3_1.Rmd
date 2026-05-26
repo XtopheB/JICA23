@@ -355,8 +355,11 @@ Indicators are often disaggregated to study inequalities between groups.
 
 Here we calculate SDG 5.3.1 separately for urban and rural areas. This is done exactly with the same code, but using the feature of  `group_by()` to get one result *by* category. 
 
+*hint*: We removed the area of residence which are *"unknown"*.
+
 ```{r}
 sdg_5_3_1_location <- wm_20_24 %>%
+  filter(HH6 != "Unknown") %>%
   group_by(HH6) %>%
   summarise(
     denominator = sum(wmweight, na.rm = TRUE),
@@ -407,11 +410,14 @@ The final results are saved as a CSV file, exported directly to the *output* dir
 
 ```{r}
 results <- sdg_5_3_1 %>%
+  mutate(across(where(is.numeric), round, 2)) %>%  # Only 2 digits
   mutate(
     country = country,
     year = 2023,
     unit = "Percent"
-  )
+  ) %>%
+  relocate(indicator, country, year, numerator, denominator, SDG_5_3_1, unit)
+
 # The name of the output file depends on "country" and "year"
 write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", year,".csv"))
 ```
@@ -421,6 +427,7 @@ write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", year,".csv"
 This tutorial illustrated a complete workflow for computing an SDG indicator using household survey microdata in R.
 
 The workflow included:
+
 - importing SPSS data,
 - exploring variables,
 - producing descriptive statistics,
