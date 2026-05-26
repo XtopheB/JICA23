@@ -9,10 +9,10 @@ output:
     toc_float: true
     code_folding: hide
     code_download: true
-  word_document:
-    toc: no
   pdf_document:
     toc: yes
+  word_document:
+    toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
@@ -21,6 +21,8 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML
 # We define the options for the chunks globaly here
 
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+# Code only in html!
+knitr::opts_chunk$set(echo = knitr::is_html_output())
 
 ```
 
@@ -33,6 +35,7 @@ SDG 5.3.1 measures:
 > *The proportion of women aged 20–24 years who were first married or in union before age 18.*
 
 The tutorial introduces a simple workflow for:
+
 - importing survey data,
 - exploring variables,
 - filtering the relevant population,
@@ -58,19 +61,12 @@ The package `haven` is used to import SPSS files (`.sav`), while `tidyverse` pro
 library(pacman)
 pacman::p_load(
   haven,
-  tidyverse
+  tidyverse,
+  kableExtra, 
+  modelsummary
 )
 ```
 
-# 2. Define File Paths
-
-It is good practice to define folders where your outputs will be stored. 
-
-```{r}
-
-# input = file.path(base_path, "Data")
-# outputFolder = file.path(base_path, "Output")
-```
 
 # 3. Import the Data
 
@@ -80,6 +76,8 @@ The questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
 #Create a data frame called df which stores the MICS data
 rawdf <- read_spss("../Data/wm.sav")
 ```
+
+The raw data set has **`r nrow(rawdf)`** observations and  **`r ncol(rawdf)`** variables. 
 
 # 4. Explore the Dataset
 
@@ -98,16 +96,45 @@ Although the dataset contains many variables, we only need a few for this comput
 
 
 ##  Suggestion for Sinovia
- > Let us select the variable of interest in a new, smaller data set
+ > Let us select the variable of interest in a new, smaller data set with only the variable of interest. 
  
-```{r}
+```{r subset}
 df <- rawdf %>%
   select(WM17, WB4, WAGEM,HH6, wmweight)
 
 ```
+
+We have now a new data set with still **`r nrow(df)`** observations but only  **`r ncol(df)`** variables! Let us use some fancy package to get an overview of the values of these `r ncol(df)` variables `r names(df)`.  
  
+```{r Summary }
+# We can use the package modelsummary for a nice descriptive table  
+datasummary_skim(df , type = "numeric")
+```
+
 
 # 5. Explore Variable Structure
+
+##  Suggestion for Sinovia
+
+> Let us change the type of the variables to match their original nature. 
+
+The variable `HH6` is considered as numerical in the original data set, while it encodes the Area of residence (Rural, Urban). This should be a ***factor***. We should modify its type.  
+
+```{r typeHH6}
+# The variable HH6 should be a factor
+# We use https://microdata.worldbank.org/index.php/catalog/4168/data-dictionary/F4?file_name=hh.sav 
+
+df <- df %>%
+  mutate(HH6 = factor(HH6,
+                       levels = c(1,2,3),
+                       labels = c("Urban", "Rural", "Unknown")
+                       )
+  )
+        
+
+```
+
+
 
 ## Check Variable Classes for WB4 and WAGEM
 
@@ -168,12 +195,12 @@ df %>%
   theme_minimal()
 ```
 
-# 7. Explore Age Variables
+# 7. Explore Age Variable
 
 ## Summary Statistics
 
 ```{r summaryAge}
-
+# Age is the variable WB4
 
 df %>% 
   select(WB4) %>% 
@@ -186,10 +213,17 @@ df %>%
 ## Histogram of Women's Age
 
 ```{r HistAge}
+
+
 df %>%
 ggplot() +
   aes(x = WB4) +
   geom_histogram(binwidth = 1, fill = "lightblue") +
+   geom_vline(aes(xintercept = median(WB4, na.rm =TRUE)), 
+             color = "red", 
+             linetype = "dashed", 
+             linewidth = 1) +
+  
   labs(
     title = "Distribution of Women's Age",
     x = "Age",
@@ -288,9 +322,11 @@ sdg_5_3_1 <- wm_20_24 %>%
     denominator = sum(wmweight, na.rm = TRUE),
     numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
     SDG_5_3_1    = 100 * numerator / denominator
-  )
-
-sdg_5_3_1
+  ) 
+ 
+# Making a nice table
+kable(sdg_5_3_1,
+      digits = 1, caption = " SDG 5.3.1")
 ```
 
 # 12. Disaggregation by Location
@@ -348,7 +384,7 @@ results <- sdg_5_3_1 %>%
     unit = "Percent"
   )
 
-write_csv(results, file.path(output, "SDG_5_3_1_results.csv"))
+write_csv(results, "../Output/SDG_5_3_1_results.csv")
 ```
 
 # Conclusion
@@ -366,3 +402,15 @@ The workflow included:
 - and exporting the results.
 
 The same general approach can be adapted to many other SDG indicators derived from survey data.
+
+
+```{r}
+country <- "Lao"
+rmarkdown::render(
+  "Computing_SDG5_3_1_Lao.Rmd",
+   output_file = "SDG_5_3_1_report_Lao.html",
+  #output_file = paste0("SDG_5_3_1_report_",country,".html"),
+  output_dir = "../Output"
+)
+```
+
