@@ -13,16 +13,19 @@ output:
     toc: yes
   word_document:
     toc: no
-always_allow_html: true  # <-- bypass errors caused by interactive HTML
+always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 ---
 
 
 ```{r setup, include=FALSE}
 # We define the options for the chunks globaly here
 
-knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
-# Code only in html!
-knitr::opts_chunk$set(echo = knitr::is_html_output())
+knitr::opts_chunk$set( message = FALSE,
+                       warning = FALSE,
+                       results =TRUE,
+                       echo = TRUE, 
+                       echo = knitr::is_html_output() # Code only in html!
+                       ) 
 
 ```
 
@@ -70,7 +73,7 @@ pacman::p_load(
 
 # 3. Import the Data
 
-The questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
+The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
 
 ```{r import}
 #Create a data frame called df which stores the MICS data
@@ -96,7 +99,7 @@ Although the dataset contains many variables, we only need a few for this comput
 
 
 ##  Suggestion for Sinovia
- > Let us select the variable of interest in a new, smaller data set with only the variable of interest. 
+ > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
  
 ```{r subset}
 df <- rawdf %>%
@@ -104,11 +107,11 @@ df <- rawdf %>%
 
 ```
 
-We have now a new data set with still **`r nrow(df)`** observations but only  **`r ncol(df)`** variables! Let us use some fancy package to get an overview of the values of these `r ncol(df)` variables `r names(df)`.  
+We have now a new data set  `df` with still **`r nrow(df)`** observations but only  **`r ncol(df)`** variables! Let us use some fancy package to get an overview of the values of these `r ncol(df)` variables: *`r names(df)`*.  
  
 ```{r Summary }
 # We can use the package modelsummary for a nice descriptive table  
-datasummary_skim(df , type = "numeric")
+datasummary_skim(df , type = "numeric", )
 ```
 
 
@@ -213,7 +216,7 @@ df %>%
 ## Histogram of Women's Age
 
 ```{r HistAge}
-
+# We can display the distribution with an Histogram
 
 df %>%
 ggplot() +
@@ -277,17 +280,18 @@ ggplot(df, aes(x = WAGEM)) +
            size = 4)+
   labs(
     title = "Age at First Marriage",
-    x = "Age",
-    y = "Frequency"
+    x = "Age at first marriage",
+    y = "Frequency",
+    caption = paste0("Nb of respondants =", nrow(df))
   ) +
   theme_minimal()
 ```
 
 # 10. Select the Population of Interest
 
-SDG 5.3.1 is calculated for women aged **20–24 years** who completed the interview.
+SDG 5.3.1 is calculated for women aged **20–24 years** who completed the interview. We create a new data set `wm_20_24` with only the population in the definition.  
 
-```{r}
+```{r subset20_24}
 wm_20_24 <- df %>%
   filter(
     WM17 == 1,
@@ -296,11 +300,9 @@ wm_20_24 <- df %>%
   )
 ```
 
-We can compute the number of women included in the analysis.
+We can compute the number of women included in the analysis, now only `r nrow(wm_20_24)` women.
 
-```{r}
-nrow(wm_20_24)
-```
+
 
 # 11. Compute SDG 5.3.1
 
@@ -308,14 +310,21 @@ The indicator is calculated as:
 
 $$
 \text{SDG 5.3.1} =
-\frac{\text{Women married before age 18}}
-{\text{Total women aged 20–24}}
+\frac{\text{Nb of women married before age 18}}
+{\text{Total nb women aged 20–24}}
 \times 100
 $$
 
-Because MICS is a sample survey, we use the sampling weights (`wmweight`) in both the numerator and denominator.
+Because MICS is a sample survey, we use the sampling weights (`wmweight`) in both the numerator and denominator, so the exact definition becomes.
 
-```{r}
+$$
+\text{SDG 5.3.1} =
+\frac{\text{ "weighted nb" of women married before age 18}}
+{\text{Total "weighted nb" women aged 20–24}}
+\times 100
+$$
+The result can be summarized in this table:
+```{r SDG_5_3_1}
 sdg_5_3_1 <- wm_20_24 %>%
   summarise(
     indicator = "SDG 5.3.1",
@@ -333,7 +342,7 @@ kable(sdg_5_3_1,
 
 Indicators are often disaggregated to study inequalities between groups.
 
-Here we calculate SDG 5.3.1 separately for urban and rural areas.
+Here we calculate SDG 5.3.1 separately for urban and rural areas. This is done exactly with the same code, but using the feature of  `group_by()` to get one result *by* category. 
 
 ```{r}
 sdg_5_3_1_location <- wm_20_24 %>%
@@ -341,13 +350,15 @@ sdg_5_3_1_location <- wm_20_24 %>%
   summarise(
     denominator = sum(wmweight, na.rm = TRUE),
     numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
-    proportion  = numerator / denominator
+    SDG_5_3_1  = 100 * numerator / denominator
   )
 
-sdg_5_3_1_location
+# Making a nice table
+kable(sdg_5_3_1_location,
+      digits = 1, caption = " SDG 5.3.1 by Area")
 ```
 
-## Convert Proportions to Percentages
+## Convert Proportions to Percentages ?????? <<- Why? 
 
 ```{r}
 sdg_5_3_1_location <- sdg_5_3_1_location %>%
@@ -359,22 +370,27 @@ sdg_5_3_1_location
 # 13. Visualize Urban and Rural Differences
 
 ```{r}
-ggplot(
-  sdg_5_3_1_location,
-  aes(x = factor(HH6), y = proportion)
-) +
+sdg_5_3_1_location %>%
+  filter(HH6 != "Unknown") %>%
+ggplot()+ 
+  aes(x = factor(HH6), y = SDG_5_3_1, fill = HH6) +
   geom_col() +
+  geom_text(
+    aes(label = paste(round(SDG_5_3_1, 2), "%")),
+    hjust = 1.5,
+    color = "white" ) +
   labs(
     title = "SDG 5.3.1 by Location",
     x = "Location (1 = Urban, 2 = Rural)",
     y = "Percent"
   ) +
+  coord_flip() +
   theme_minimal()
 ```
 
 # 14. Export the Results
 
-The final results are saved as a CSV file.
+The final results are saved as a CSV file, exported directly to the *output* directory.
 
 ```{r}
 results <- sdg_5_3_1 %>%
@@ -404,13 +420,15 @@ The workflow included:
 The same general approach can be adapted to many other SDG indicators derived from survey data.
 
 
-```{r}
+```{r outputreport, eval=FALSE, include=FALSE}
+# Attempt to have the report produced in another directory
+
 country <- "Lao"
+
 rmarkdown::render(
   "Computing_SDG5_3_1_Lao.Rmd",
-   output_file = "SDG_5_3_1_report_Lao.html",
-  #output_file = paste0("SDG_5_3_1_report_",country,".html"),
-  output_dir = "../Output"
+  output_file = paste0("SDG_5_3_1_report_",country,".html"),
+  output_dir = "../Reports"
 )
 ```
 
