@@ -18,6 +18,8 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML
 
 
 ```{r setup, include=FALSE}
+# We define the options for the chunks globaly here
+
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
 
 ```
