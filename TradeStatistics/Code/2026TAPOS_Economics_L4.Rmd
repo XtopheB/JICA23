@@ -501,4 +501,17 @@ sn
 Deadline is on **July 10** (Friday)
 
 
+```{r outputreport, eval=FALSE, include=FALSE}
+# Attempt to have the report produced in another directory 
+#  Needs to run manually
+
+country <- "Indonesia"
+
+rmarkdown::render(
+  "2026TAPOS_Economics_L4.Rmd",
+  output_file = paste0("TradeStatistics",country,".html"),
+  output_dir = "../Output"
+)
+```
+
 
