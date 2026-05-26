@@ -23,15 +23,22 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
                        results =TRUE,
-                       echo = TRUE, 
                        echo = knitr::is_html_output() # Code only in html!
-                       ) 
+                       )
+
+```
+
+```{r country}
+# Since we may want to use other data set from other countries/years
+# Let us define the country and year as a parameter
+country <- "Lao"
+year <-  "2023"
 
 ```
 
 # Introduction
 
-This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for Lao PDR (2023).
+This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r year`).
 
 SDG 5.3.1 measures:
 
@@ -77,6 +84,7 @@ The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`
 
 ```{r import}
 #Create a data frame called df which stores the MICS data
+# This data set will change for a different country
 rawdf <- read_spss("../Data/wm.sav")
 ```
 
@@ -111,7 +119,7 @@ We have now a new data set  `df` with still **`r nrow(df)`** observations but on
  
 ```{r Summary }
 # We can use the package modelsummary for a nice descriptive table  
-datasummary_skim(df , type = "numeric", )
+datasummary_skim(df , type = "numeric" )
 ```
 
 
@@ -192,7 +200,8 @@ df %>%
     title = "Interview Status",
     x = "",
     y = "Number of Women",
-    fill = "WM17"
+    caption = paste0("Source: MICS - ", country,", (", year,")"),
+    fill = "Interview result"
   ) +
   
   theme_minimal()
@@ -230,7 +239,8 @@ ggplot() +
   labs(
     title = "Distribution of Women's Age",
     x = "Age",
-    y = "Frequency"
+    y = "Frequency", 
+    caption = paste0("Source: MICS - ", country,", (", year,")"),
   ) +
   theme_minimal()
 ```
@@ -335,7 +345,8 @@ sdg_5_3_1 <- wm_20_24 %>%
  
 # Making a nice table
 kable(sdg_5_3_1,
-      digits = 1, caption = " SDG 5.3.1")
+      digits = 1,
+      caption = paste0("SDG 5.3.1 - ",country,", (", year,")"))
 ```
 
 # 12. Disaggregation by Location
@@ -355,16 +366,17 @@ sdg_5_3_1_location <- wm_20_24 %>%
 
 # Making a nice table
 kable(sdg_5_3_1_location,
-      digits = 1, caption = " SDG 5.3.1 by Area")
+      digits = 1, 
+      caption = paste0("SDG 5.3.1 by Area - ",country,", (", year,")"))
 ```
 
 ## Convert Proportions to Percentages ?????? <<- Why? 
 
 ```{r}
-sdg_5_3_1_location <- sdg_5_3_1_location %>%
-  mutate(proportion = proportion * 100)
-
-sdg_5_3_1_location
+# sdg_5_3_1_location <- sdg_5_3_1_location %>%
+#   mutate(proportion = proportion * 100)
+# 
+# sdg_5_3_1_location
 ```
 
 # 13. Visualize Urban and Rural Differences
@@ -382,7 +394,8 @@ ggplot()+
   labs(
     title = "SDG 5.3.1 by Location",
     x = "Location (1 = Urban, 2 = Rural)",
-    y = "Percent"
+    y = "Percent", 
+    caption = paste0("Report for ",country,"(", year, ")"),
   ) +
   coord_flip() +
   theme_minimal()
@@ -395,12 +408,12 @@ The final results are saved as a CSV file, exported directly to the *output* dir
 ```{r}
 results <- sdg_5_3_1 %>%
   mutate(
-    country = "Lao PDR",
+    country = country,
     year = 2023,
     unit = "Percent"
   )
-
-write_csv(results, "../Output/SDG_5_3_1_results.csv")
+# The name of the output file depends on "country" and "year"
+write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", year,".csv"))
 ```
 
 # Conclusion
@@ -421,14 +434,23 @@ The same general approach can be adapted to many other SDG indicators derived fr
 
 
 ```{r outputreport, eval=FALSE, include=FALSE}
-# Attempt to have the report produced in another directory
-
-country <- "Lao"
+# Compiling manually to have the report produced in another directory
+# The name of the output file depends on "country" and "year"
 
 rmarkdown::render(
-  "Computing_SDG5_3_1_Lao.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",country,".html"),
+  "Computing_SDG5_3_1.Rmd",
+  output_file = paste0("SDG_5_3_1_report_",country,"-", year,".html"),
   output_dir = "../Reports"
 )
+```
+
+
+```{r outputWord, eval = FALSE, include=FALSE}
+rmarkdown::render(
+  "Computing_SDG5_3_1.Rmd",
+  output_file = paste0("SDG_5_3_1_report_",country,"-", year,".docx"),
+  output_dir = "../Reports"
+)
+
 ```
 
