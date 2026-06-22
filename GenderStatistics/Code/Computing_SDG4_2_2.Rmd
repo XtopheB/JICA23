@@ -21,7 +21,7 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
-                       results =TRUE,
+                       results = TRUE,
                        echo = knitr::is_html_output() # Code only in html!
                        )
 
@@ -250,7 +250,7 @@ sdg_4_2_2_sex <- hl_422 %>%
 
 A simple bar chat make the male–female gap immediately readable.
 
-```{r viz-sex, eval=FALSE}
+```{r viz-sex}
 sdg_4_2_2_sex %>%
   ggplot(aes(x = HL4, y = SDG_4_2_2, fill = HL4)) +
   geom_col(width = 0.5, show.legend = FALSE) +
@@ -287,7 +287,7 @@ sdg_4_2_2__location <- hl_422 %>%
 ## Visualizing 
 
 
-```{r viz-location, eval=FALSE}
+```{r viz-location}
 sdg_4_2_2__location %>%
   ggplot(aes(x =HH6_N, y = SDG_4_2_2, fill = HH6_N)) +
   geom_col(width = 0.5, show.legend = FALSE) +
@@ -310,6 +310,7 @@ Here we disaggregate the indicator following the wealth levels. We use the quint
 
 ```{r disagg-wealth}
 sdg_4_2_2_Wealth <- hl_422  %>%
+   mutate(windex5 = as_factor(windex5)) %>%  # windex5 should be a factor
   group_by(windex5) %>%  
   summarise(
     Numerator = sum(hhweight * organized_learning, na.rm = TRUE),
@@ -320,7 +321,7 @@ sdg_4_2_2_Wealth <- hl_422  %>%
 ```
 
 
-```{r viz-wealth, eval=FALSE}
+```{r viz-wealth}
 sdg_4_2_2_Wealth %>%
   ggplot(aes(x = windex5, y = SDG_4_2_2, fill = windex5)) +
   geom_col(width = 0.5, show.legend = FALSE) +

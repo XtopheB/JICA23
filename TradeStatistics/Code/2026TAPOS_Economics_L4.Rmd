@@ -18,9 +18,13 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML
 
 
 ```{r setup, include=FALSE}
-# We define the options for the chunks globaly here
+# We define the options for all chunks
 
-knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+knitr::opts_chunk$set( message = FALSE,
+                       warning = FALSE,
+                       results =TRUE,
+                       echo = TRUE 
+                       ) 
 
 ```
 
@@ -29,12 +33,9 @@ In this exercise, we will learn how to create tables and charts on international
 Download the latest trade data of **Indonesia** from the **Bulk file** in UN Comtrade Database or from this [UN Comtrade file](https://comtradeplus.un.org/TradeFlow). Copy the file to one of your folders for the TAPOS course, and set the said folder as your working directory.
 
 
-
 # Step 1: Install the appropriate R packages 
 
 *Install packages only once.*
-
-
 
 
 ```{r packages, include=FALSE}
