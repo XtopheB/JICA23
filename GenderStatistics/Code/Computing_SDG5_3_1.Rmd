@@ -32,13 +32,13 @@ knitr::opts_chunk$set( message = FALSE,
 # Since we may want to use other data set from other countries/years
 # Let us define the country and year as a parameter
 country <- "Lao"
-year <-  "2023"
+RefYear <-  "2023"
 
 ```
 
 # Introduction
 
-This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r year`).
+This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r RefYear`).
 
 SDG 5.3.1 measures:
 
@@ -200,7 +200,7 @@ df %>%
     title = "Interview Status",
     x = "",
     y = "Number of Women",
-    caption = paste0("Source: MICS - ", country,", (", year,")"),
+    caption = paste0("Source: MICS - ", country,", (", RefYear,")"),
     fill = "Interview result"
   ) +
   
@@ -240,7 +240,7 @@ ggplot() +
     title = "Distribution of Women's Age",
     x = "Age",
     y = "Frequency", 
-    caption = paste0("Source: MICS - ", country,", (", year,")"),
+    caption = paste0("Source: MICS - ", country,", (", RefYear,")"),
   ) +
   theme_minimal()
 ```
@@ -264,7 +264,7 @@ ggplot(df, aes(x = wmweight)) +
     title = "Distribution of Sampling Weights",
     x = "Sampling Weight",
     y = "Frequency", 
-   caption = paste0("Source: MICS - ", country,", (", year,")")  ) +
+   caption = paste0("Source: MICS - ", country,", (", RefYear,")")  ) +
   theme_minimal()
 ```
 
@@ -292,7 +292,7 @@ ggplot(df, aes(x = WAGEM)) +
     title = "Age at First Marriage",
     x = "Age at first marriage",
     y = "Frequency",
-    caption = paste0("Source: MICS - ", country,", (", year,")",
+    caption = paste0("Source: MICS - ", country,", (", RefYear,")",
      " - Nb of respondants =", nrow(df) ) 
     ) +
   theme_minimal()
@@ -347,7 +347,7 @@ sdg_5_3_1 <- wm_20_24 %>%
 # Making a nice table
 kable(sdg_5_3_1,
       digits = 1,
-      caption = paste0("SDG 5.3.1 - ",country,", (", year,")"))
+      caption = paste0("SDG 5.3.1 - ",country,", (", RefYear,")"))
 ```
 
 # 12. Disaggregation by Location
@@ -371,7 +371,7 @@ sdg_5_3_1_location <- wm_20_24 %>%
 # Making a nice table
 kable(sdg_5_3_1_location,
       digits = 1, 
-      caption = paste0("SDG 5.3.1 by Area - ",country," (", year,")"))
+      caption = paste0("SDG 5.3.1 by Area - ",country," (", RefYear,")"))
 ```
 
 ## Convert Proportions to Percentages ?????? <<- Why? 
@@ -399,7 +399,7 @@ ggplot()+
     title = "SDG 5.3.1 by Location",
     x = "Location ",
     y = "SDG 5.3.1 (in %)", 
-    caption = paste0("Report for ",country," (", year, ")"),
+    caption = paste0("Report for ",country," (", RefYear, ")"),
   ) +
   coord_flip() +
   theme_minimal()
@@ -414,13 +414,13 @@ results <- sdg_5_3_1 %>%
   mutate(across(where(is.numeric), round, 2)) %>%  # Only 2 digits
   mutate(
     country = country,
-    year = 2023,
+    year = RefYear,
     unit = "Percent"
   ) %>%
   relocate(indicator, country, year, numerator, denominator, SDG_5_3_1, unit)
 
 # The name of the output file depends on "country" and "year"
-write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", year,".csv"))
+write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", RefYear,".csv"))
 ```
 
 # Conclusion
@@ -447,7 +447,7 @@ The same general approach can be adapted to many other SDG indicators derived fr
 
 rmarkdown::render(
   "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",country,"-", year,".html"),
+  output_file = paste0("SDG_5_3_1_report_",country,"-", RefYear,".html"),
   output_dir = "../Reports"
 )
 ```
@@ -456,7 +456,7 @@ rmarkdown::render(
 ```{r outputWord, eval = FALSE, include=FALSE}
 rmarkdown::render(
   "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",country,"-", year,".docx"),
+  output_file = paste0("SDG_5_3_1_report_",country,"-", RefYear,".docx"),
   output_dir = "../Reports"
 )
 
