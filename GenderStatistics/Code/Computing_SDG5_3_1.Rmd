@@ -54,7 +54,7 @@ The tutorial introduces a simple workflow for:
 - visualizing the data,
 - and exporting results.
 
-# Step 1: Install the appropriate R packages 
+# 1: Install the appropriate R packages 
 
 *Install packages only once.*
 
@@ -78,7 +78,7 @@ pacman::p_load(
 ```
 
 
-# 3. Import the Data
+# 2. Import the Data
 
 The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
 
@@ -90,7 +90,7 @@ rawdf <- read_spss("../Data/wm.sav")
 
 The raw data set has **`r nrow(rawdf)`** observations and  **`r ncol(rawdf)`** variables. 
 
-# 4. Explore the Dataset
+# 3. Explore the Dataset
 
 This dataset contains information collected from women interviewed during the survey. it has `r nrow(df)` observations and `r ncol(df)` variables 
 
@@ -106,7 +106,7 @@ Although the dataset contains many variables, we only need a few for this comput
 | wmweight | Sampling weight |
 
 
-##  Suggestion for Sinovia
+##  Variable selection
  > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
  
 ```{r subset}
@@ -125,7 +125,6 @@ datasummary_skim(df , type = "numeric" )
 
 # 5. Explore Variable Structure
 
-##  Suggestion for Sinovia
 
 > Let us change the type of the variables to match their original nature. 
 
