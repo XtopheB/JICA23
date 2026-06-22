@@ -4,13 +4,13 @@ author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia a
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  pdf_document:
+    toc: yes
   word_document:
     toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
@@ -31,7 +31,9 @@ knitr::opts_chunk$set( message = FALSE,
 # Since we may want to use other data set from other countries/years
 # Let us define the country and year as a parameter
 country <- "Lao"
-RefYear <-  "2023"
+DataYear <- 2023
+# Years taken into account for the definition of the indicator
+RefYear <-  DataYear -1 # The last school year recorded
 RefAge <- 5
 
 ```
@@ -39,7 +41,7 @@ RefAge <- 5
 ---
 
 # Introduction
-This tutorial demonstrates how to compute the **SDG Indicator 4.2.2: percentage of children in organized learning** (one year before the official primary entry age),  using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r RefYear`).
+This tutorial demonstrates how to compute the **SDG Indicator 4.2.2: percentage of children in organized learning** (one year before the official primary entry age),  using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r DataYear`).
 
 
 The definition of **organised learning** is the following: 
@@ -48,49 +50,47 @@ The definition of **organised learning** is the following:
 
 
 
-For **`r country`**, the reference cohort is children who were **`r RefAge`** years old in September **`r RefYear-1`**, meaning they were born between **October `r RefYear-RefAge-1`** and **September `r RefYear-RefAge`**. The data source is the Multiple Indicator Cluster Survey (MICS) household roster (`hl.sav`).
+For **`r country`**, the reference cohort is children who were **`r RefAge`** years old in September **`r RefYear`**, meaning they were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**. The data source is the Multiple Indicator Cluster Survey (MICS) household roster (`hl.sav`).
 
----
+The tutorial follows a workflow for computing this indicator:
 
-# Setup
+ INSERT WOKFLOW HERE
 
-## Load Libraries
 
-```{r libraries}
-library(tidyverse)
-library(haven)
-library(dplyr)
+# 1: Install the appropriate R packages 
+
+We use here a package manager `pacman` (another package). Once installed and loaded, it can facilitate the use of a list of packages
+
+```{r packages}
+# We use pacman here 
+# install.packages("pacman")  # <-- Run only once
+
+library(pacman)
+pacman::p_load(
+  haven,
+  tidyverse,
+  kableExtra, 
+  modelsummary
+)
 ```
 
----
 
+# 2. Import the Data
 
-# Data Loading and Initial Inspection
-
-## Load Raw Data
+The full questionnaire dataset (`hl.sav`) is imported into R using `read_sav()`.
 
 ```{r load-data}
 rawdf <- read_sav("../Data/hl.sav")
 ```
 
-```{r dims-raw}
-cat("Rows   :", nrow(rawdf), "\n")
-cat("Columns:", ncol(rawdf), "\n")
-```
 
-The raw dataset contains **`r nrow(rawdf)` observations** across **`r ncol(rawdf)` variables**, covering all household members recorded in the survey.
+The raw dataset contains **`r nrow(rawdf)`** observations across **`r ncol(rawdf)`** variables, covering all household members recorded in the survey.
 
-## Quick Structure Check
 
-```{r structure}
-str(rawdf)
-```
 
----
+# 3. Explore the Dataset
 
-# Variable Exploration
-
-The indicator is constructed from a small set of roster and education variables. Below we profile each one to check coding, value labels, and missing data before any recoding.
+The indicator is constructed from a small set of variables
 
 ## Key Variables Used
 
@@ -103,124 +103,118 @@ The indicator is constructed from a small set of roster and education variables.
 | `ED4`       | Ever attended school or ECE                          |
 | `ED9`       | Attended school or ECE in current year (2022–2023)   |
 | `ED10A`     | Level of education in current year (ECE = 0)         |
-| `ED15`      | Attended school or ECE in previous year (2021–2022)  |
-| `ED16A`     | Level attended in previous year (ECE = 0)            |
+| `HH6`       | Location or Area (rural , Urban)                     |
+| `windex5`   |  Wealth quintile                                     |
 | `hhweight`  | Household sample weight                              |
 
-## Sex (`HL4`)
 
-```{r explore-sex}
-class(rawdf$HL4)
-table(rawdf$HL4)
-attr(rawdf$HL4, "labels")
-```
 
-## Age (`HL6`)
-
-```{r explore-age}
-class(rawdf$HL6)
-summary(rawdf$HL6)
-```
-
-## Current-Year School Attendance (`ED9`)
-
-```{r explore-ed9}
-class(rawdf$ED9)
-table(rawdf$ED9)
-attr(rawdf$ED9, "labels")
-```
-
-## Previous-Year School Attendance (`ED15`)
-
-```{r explore-ed15}
-class(rawdf$ED15)
-table(rawdf$ED15)
-attr(rawdf$ED15, "labels")
-```
-
-## Household Weight (`hhweight`)
-
-```{r explore-weight}
-class(rawdf$hhweight)
-summary(rawdf$hhweight)
-```
-
----
-
-# Data Preparation
-
-## Select Variables of Interest
-
-We narrow the dataset to the ten variables needed for the indicator computation.
+##  Variable selection
+ > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
+ 
 
 ```{r select-vars}
 df <- rawdf %>%
-  select(HL1, HL4, HL5M, HL5Y, HL6, ED4, ED9, ED10A, ED15, ED16A, hhweight)
+  select( HL4, HL5M, HL5Y, HL6, ED4, ED9, ED10A, HH6, windex5, hhweight)
+
+
 ```
 
-```{r dims-df}
-cat("Rows   :", nrow(df), "\n")
-cat("Columns:", ncol(df), "\n")
+We have now a new data set  `df` with still **`r nrow(df)`** observations but only  **`r ncol(df)`** variables! Let us use some fancy package to get an overview of the values of these `r ncol(df)` variables: *`r names(df)`*.  
+ 
+```{r Summary_all }
+# We can use the package modelsummary for a nice descriptive table  
+datasummary_skim(df , type = "numeric" )
 ```
+
 
 After selection, the working dataset has **`r nrow(df)` rows** and **`r ncol(df)` columns**.
+
+> Some variables ar not numbers (`numeric`) but categories (`factor`), We should adjust their types to avoid issues in the computation.
+
+
+```{r redefine-type}
+# We use as_factor to transform variables with their right type
+
+df <- df %>%
+  mutate(HL4 = as_factor(HL4), 
+         HH6 = as_factor(HH6))
+```
+
+
+```{r Summary_factor }
+# We can use the package modelsummary for a nice descriptive table  
+datasummary_skim(df ,type = "categorical" )
+```
 
 ---
 
 # SDG 4.2.2 Computation
 
 ## Define the Target Cohort
+There are several step for computing the population of interest:
 
-Children who were **5 years old in September 2022** were born between **October 2016 and September 2017**. We exclude records with missing or invalid birth-month codes (98, 99).
+ - First, we exclude records with missing or invalid birth-month codes ( variable `HLM5` is   98, 99) 
+ - Second, children who were **`r RefAge`** years old in September **`r RefYear `** were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**.
+
+> We need to identify the variables that give us that information 
+
+| Variable    | Description                                          |
+|-------------|------------------------------------------------------|
+| `HL5M`      | Date of birth — month                                |
+| `HL5Y`      | Date of birth — year                                 |
+
+
+
+
 
 ```{r cohort-filter}
-children_5_sep2022 <- df %>%
-  filter(
+
+# let's define the schooling period for this country/year
+
+Year_Start <-(RefYear-RefAge)-1 
+Year_End <- RefYear-RefAge
+
+# Filter the observations
+Pop_Children <- df %>%
+  filter(     
+    # Remove missing/invalid birth dates
     !is.na(HL5Y),
     !is.na(HL5M),
-    !(HL5M %in% c(98, 99)),
-    (HL5Y == 2016 & HL5M >= 10) |
-      (HL5Y == 2017 & HL5M <= 9)
+    !(HL5M %in% c(98, 99))
+    ) %>%
+  filter(    
+    # Selecting the target cohort
+    (HL5Y == Year_Start & HL5M >= 10) |
+      (HL5Y == Year_End & HL5M <= 9)
   )
 ```
 
-```{r dims-cohort}
-cat("Rows   :", nrow(children_5_sep2022), "\n")
-cat("Columns:", ncol(children_5_sep2022), "\n")
-```
 
-The cohort filter yields **`r nrow(children_5_sep2022)` children** born in the target window.
+The cohort filter yields **`r nrow(Pop_Children)`** children born in the target window.
 
 ## Derive Participation Indicators
 
-A child is counted as participating in organised learning if they attended ECE (level 0) or Grade 1 (level 1) in **either** the current year (2022–2023) **or** the previous year (2021–2022).
+A child is counted as participating in **organised learning** if they attended school  (`ED9`) the **current year** (`r Year_Start` - `r Year_End` )  at the ECE or Grade 1 level ( `ED10A` = 0 or 1 ) .
 
-```{r indicator-derive}
-hl_422 <- children_5_sep2022 %>%
-  mutate(
-    # Attending ECE or Grade 1 in current school year 2022-2023
-    organized_learning_current = ED9 == 1 & ED10A %in% c(0, 1),
-
-    # Attended ECE or Grade 1 in previous school year 2021-2022
-    organized_learning_previous = ED15 == 1 & ED16A %in% c(0, 1),
-
-    # Either year counts
-    organized_learning = organized_learning_current | organized_learning_previous
+```{r Population}
+hl_422 <- Pop_Children %>%
+    # Attending ECE or Grade 1 in current school year 
+     mutate(
+    organized_learning = ifelse(ED9 == 1 & ED10A %in% c(0, 1), TRUE, FALSE)
   )
 ```
 
-```{r dims-hl422}
-cat("Rows   :", nrow(hl_422), "\n")
-cat("Columns:", ncol(hl_422), "\n")
+```{r InLearning-count}
+Nb_InLearning <-  sum(hl_422$organized_learning, na.rm = TRUE)
+
 ```
 
-```{r raw-count}
-cat("Unweighted count in organised learning:", sum(hl_422$organized_learning, na.rm = TRUE), "\n")
-```
+> There are **`r Nb_InLearning `** children in organized learning within **`r nrow(Pop_Children)`**  in the target cohort population. 
 
 ## National Estimate
 
-The indicator is computed as a weighted proportion. Weights reflect the complex survey design.
+The indicator is computed as a weighted proportion. Weights reflect the survey design.
 
 ```{r national-estimate}
 sdg_4_2_2 <- hl_422 %>%
@@ -230,16 +224,15 @@ sdg_4_2_2 <- hl_422 %>%
     SDG_4_2_2   = 100 * Numerator / Denominator
   )
 
-print(sdg_4_2_2)
+# print(sdg_4_2_2)
 ```
 
-> **National SDG 4.2.2 estimate: `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of 5-year-olds participated in organised learning in 2022–2023.
+> The **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of 5-year-olds participated in organised learning in `r RefYear` - `r DataYear`.
 
----
 
 # Disaggregation by Sex
 
-Equity analysis is central to SDG monitoring. Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
+Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
 
 ```{r disagg-sex}
 sdg_4_2_2_sex <- hl_422 %>%
@@ -248,124 +241,82 @@ sdg_4_2_2_sex <- hl_422 %>%
     Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
     Denominator = sum(hhweight, na.rm = TRUE),
     SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
-  ) %>%
-  mutate(Sex = case_when(
-    as.numeric(HL4) == 1 ~ "Male",
-    as.numeric(HL4) == 2 ~ "Female",
-    TRUE ~ "Unknown"
-  ))
+  )
 
-print(sdg_4_2_2_sex)
 ```
 
----
+
+## Visualizing 
+
+A simple bar chat make the male–female gap immediately readable.
+
+```{r viz-sex, eval=FALSE}
+sdg_4_2_2_sex %>%
+  ggplot(aes(x = HL4, y = SDG_4_2_2, fill = HL4)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.5, size = 4.5) +
+  scale_fill_manual(values = c("#1a7abf", "#e05c2a")) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by Sex",
+    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+# Disaggregation by Location 
+
+Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  
+
+```{r disagg-Area}
+sdg_4_2_2__location <- hl_422 %>%
+  mutate(HH6_N = ifelse(HH6 == "URBAN", HH6, "RURAL"))%>%
+  group_by(HH6_N) %>%
+  summarise(
+    Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
+  ) 
+
+```
+
+
+## Visualizing 
+
+A simple bar chat make the male–female gap immediately readable.
+
+```{r viz-sex, eval=FALSE}
+sdg_4_2_2__location %>%
+  ggplot(aes(x =HH6_N, y = SDG_4_2_2, fill = HH6_N)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.5, size = 4.5) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by Location",
+    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+
+
 
 # Export Results
 
 Both summary tables are saved as CSV files for further reporting or dissemination.
 
 ```{r export}
-write_csv(sdg_4_2_2,     "sdg_4_2_2_results.csv")
-write_csv(sdg_4_2_2_sex, "sdg_4_2_2_results_by_sex.csv")
-cat("Files written: sdg_4_2_2_results.csv, sdg_4_2_2_results_by_sex.csv\n")
+write_csv(sdg_4_2_2,     "../output/sdg_4_2_2_results.csv")
+write_csv(sdg_4_2_2_sex, "../output/sdg_4_2_2_results_by_sex.csv")
+write_csv(sdg_4_2_2__location, "../output/sdg_4_2_2_results_by_location.csv")
 ```
+
 
 ---
-
-# Suggested Visualisations
-
-The charts below illustrate different aspects of the indicator. Adapt colours and labels to your institutional style guide.
-
-## 4.1 — National Headline with a Reference Line
-
-A simple gauge or horizontal bar comparing the national estimate to a policy target (e.g. 80 % or 100 %) gives an immediate sense of the coverage gap.
-
-```{r viz-national, eval=FALSE}
-library(ggplot2)
-
-sdg_val <- sdg_4_2_2$SDG_4_2_2
-
-ggplot(data.frame(x = "Lao PDR", y = sdg_val),
-       aes(x = x, y = y)) +
-  geom_col(fill = "#1a7abf", width = 0.4) +
-  geom_hline(yintercept = 100, linetype = "dashed", colour = "grey40") +
-  geom_text(aes(label = paste0(round(y, 1), "%")),
-            vjust = -0.6, size = 5, fontface = "bold") +
-  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
-  labs(
-    title    = "SDG 4.2.2 — Participation in Organised Learning",
-    subtitle = "Lao PDR · School Year 2022–2023",
-    x = NULL, y = "Participation Rate (%)"
-  ) +
-  theme_minimal(base_size = 13)
-```
-
-## 4.2 — Gender Disaggregation Bar Chart
-
-Side-by-side bars make the male–female gap immediately readable.
-
-```{r viz-sex, eval=FALSE}
-sdg_4_2_2_sex %>%
-  ggplot(aes(x = Sex, y = SDG_4_2_2, fill = Sex)) +
-  geom_col(width = 0.5, show.legend = FALSE) +
-  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
-            vjust = -0.5, size = 4.5) +
-  scale_fill_manual(values = c("Male" = "#1a7abf", "Female" = "#e05c2a")) +
-  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
-  labs(
-    title    = "SDG 4.2.2 by Sex",
-    subtitle = "Lao PDR · School Year 2022–2023",
-    x = NULL, y = "Participation Rate (%)"
-  ) +
-  theme_minimal(base_size = 13)
-```
-
-## 4.3 — Current vs. Previous Year Contribution
-
-Stacked or grouped bars showing how many children are captured exclusively via the current year, exclusively via the previous year, or via both, helps assess data quality and year-on-year enrolment patterns.
-
-```{r viz-year-contribution, eval=FALSE}
-hl_422 %>%
-  mutate(
-    source = case_when(
-      organized_learning_current & !organized_learning_previous ~ "Current year only",
-      !organized_learning_current & organized_learning_previous ~ "Previous year only",
-      organized_learning_current & organized_learning_previous  ~ "Both years",
-      TRUE ~ "Neither"
-    )
-  ) %>%
-  count(source, wt = hhweight, name = "weighted_n") %>%
-  ggplot(aes(x = reorder(source, -weighted_n), y = weighted_n, fill = source)) +
-  geom_col(show.legend = FALSE) +
-  geom_text(aes(label = scales::comma(round(weighted_n))), vjust = -0.4, size = 3.8) +
-  scale_fill_brewer(palette = "Set2") +
-  scale_y_continuous(labels = scales::comma) +
-  labs(
-    title    = "Source of Organised Learning Participation",
-    subtitle = "Weighted counts by year of attendance",
-    x = NULL, y = "Weighted Population"
-  ) +
-  theme_minimal(base_size = 13)
-```
-
-## 4.4 — Age Distribution of the Cohort
-
-A histogram of birth years (or exact ages) verifies that the cohort filter captured the intended children and flags any edge cases.
-
-```{r viz-age-dist, eval=FALSE}
-hl_422 %>%
-  mutate(birth_year = as.numeric(HL5Y)) %>%
-  ggplot(aes(x = birth_year, weight = hhweight)) +
-  geom_histogram(binwidth = 0.5, fill = "#4caf8c", colour = "white") +
-  scale_y_continuous(labels = scales::comma) +
-  labs(
-    title    = "Weighted Birth-Year Distribution of Target Cohort",
-    subtitle = "Expected peak: 2016–2017",
-    x = "Birth Year", y = "Weighted Count"
-  ) +
-  theme_minimal(base_size = 13)
-```
-
----
-
 *Report generated with R `r paste(R.version$major, R.version$minor, sep = ".")` · `r format(Sys.time(), "%Y-%m-%d %H:%M")`*
