@@ -1,5 +1,5 @@
 ---
-title: "Computing SDG 4_2_2 Using MICS Data in R"
+title: "Computing SDG 4.2.2 using MICS Data in R"
 author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
@@ -149,7 +149,7 @@ datasummary_skim(df ,type = "categorical" )
 
 ---
 
-# SDG 4.2.2 Computation
+# 4. Compute SDG 4.2.2 
 
 ## Define the Target Cohort
 There are several step for computing the population of interest:
@@ -230,7 +230,7 @@ sdg_4_2_2 <- hl_422 %>%
 > The **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of 5-year-olds participated in organised learning in `r RefYear` - `r DataYear`.
 
 
-# Disaggregation by Sex
+# 5. Disaggregation by Sex
 
 Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
 
@@ -267,7 +267,7 @@ sdg_4_2_2_sex %>%
   theme_minimal(base_size = 13)
 ```
 
-# Disaggregation by Location 
+# 6. Disaggregation by Location 
 
 Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  
 
@@ -286,9 +286,8 @@ sdg_4_2_2__location <- hl_422 %>%
 
 ## Visualizing 
 
-A simple bar chat make the male–female gap immediately readable.
 
-```{r viz-sex, eval=FALSE}
+```{r viz-location, eval=FALSE}
 sdg_4_2_2__location %>%
   ggplot(aes(x =HH6_N, y = SDG_4_2_2, fill = HH6_N)) +
   geom_col(width = 0.5, show.legend = FALSE) +
@@ -296,7 +295,7 @@ sdg_4_2_2__location %>%
             vjust = -0.5, size = 4.5) +
   scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
   labs(
-    title    = "SDG 4.2.2 by Location",
+    title    = "SDG 4.2.2 by location",
     subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
     x = NULL, y = "Children in organized learning (%)"
   ) +
@@ -305,9 +304,40 @@ sdg_4_2_2__location %>%
 ```
 
 
+# 7. Disaggregation by Wealth levels
+
+Here we disaggregate the indicator following the wealth levels. We use the quintile of wealth available in the variable `windex5`
+
+```{r disagg-wealth}
+sdg_4_2_2_Wealth <- hl_422  %>%
+  group_by(windex5) %>%  
+  summarise(
+    Numerator = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2  = round(100 * Numerator / Denominator, 1)
+  )
+
+```
 
 
-# Export Results
+```{r viz-wealth, eval=FALSE}
+sdg_4_2_2_Wealth %>%
+  ggplot(aes(x = windex5, y = SDG_4_2_2, fill = windex5)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.1, size = 4.5) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by Wealth levels (quintile)",
+    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+
+# 8. Export Results
 
 Both summary tables are saved as CSV files for further reporting or dissemination.
 
@@ -315,6 +345,7 @@ Both summary tables are saved as CSV files for further reporting or disseminatio
 write_csv(sdg_4_2_2,     "../output/sdg_4_2_2_results.csv")
 write_csv(sdg_4_2_2_sex, "../output/sdg_4_2_2_results_by_sex.csv")
 write_csv(sdg_4_2_2__location, "../output/sdg_4_2_2_results_by_location.csv")
+write_csv(sdg_4_2_2_Wealth, "../output/sdg_4_2_2_results_by_wealth.csv")
 ```
 
 
