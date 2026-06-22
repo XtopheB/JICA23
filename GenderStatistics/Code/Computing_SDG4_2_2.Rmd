@@ -273,7 +273,7 @@ Here we disaggregate the indicator by type of residence to identify any disparit
 
 ```{r disagg-Area}
 sdg_4_2_2__location <- hl_422 %>%
-  mutate(HH6_N = ifelse(HH6 == "URBAN", HH6, "RURAL"))%>%
+  mutate(HH6_N = ifelse(HH6 == "URBAN", "Urban", "Rural"))%>%
   group_by(HH6_N) %>%
   summarise(
     Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
