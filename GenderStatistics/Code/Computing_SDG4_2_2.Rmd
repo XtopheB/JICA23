@@ -1,6 +1,6 @@
 ---
 title: "Computing SDG 4.2.2 using MICS Data in R"
-author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
+author: "Sinovia Moonie \nStatistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
@@ -165,7 +165,7 @@ There are several step for computing the population of interest:
 | `HL5Y`      | Date of birth — year                                 |
 
 
-
+Now, we can define the target population. 
 
 
 ```{r cohort-filter}
@@ -175,7 +175,7 @@ There are several step for computing the population of interest:
 Year_Start <-(RefYear-RefAge)-1 
 Year_End <- RefYear-RefAge
 
-# Filter the observations
+# Filter the observations to define the target population
 Pop_Children <- df %>%
   filter(     
     # Remove missing/invalid birth dates
@@ -191,14 +191,14 @@ Pop_Children <- df %>%
 ```
 
 
-The cohort filter yields **`r nrow(Pop_Children)`** children born in the target window.
+The cohort filter yields **`r nrow(Pop_Children)`** children as the **target population** born in the reference window.
 
-## Derive Participation Indicators
+## Define children in organized learning
 
-A child is counted as participating in **organised learning** if they attended school  (`ED9`) the **current year** (`r Year_Start` - `r Year_End` )  at the ECE or Grade 1 level ( `ED10A` = 0 or 1 ) .
+A child is counted as participating in **organised learning** if either they attended school  (`ED9` = 1) or are at the ECE or Grade 1 level ( `ED10A` = 0 or 1 ) for the **current schooling period** (`r Year_Start` - `r Year_End` ). 
 
 ```{r Population}
-hl_422 <- Pop_Children %>%
+Pop_Children <- Pop_Children %>%
     # Attending ECE or Grade 1 in current school year 
      mutate(
     organized_learning = ifelse(ED9 == 1 & ED10A %in% c(0, 1), TRUE, FALSE)
@@ -206,7 +206,7 @@ hl_422 <- Pop_Children %>%
 ```
 
 ```{r InLearning-count}
-Nb_InLearning <-  sum(hl_422$organized_learning, na.rm = TRUE)
+Nb_InLearning <-  sum(Pop_Children$organized_learning, na.rm = TRUE)
 
 ```
 
@@ -214,10 +214,10 @@ Nb_InLearning <-  sum(hl_422$organized_learning, na.rm = TRUE)
 
 ## National Estimate
 
-The indicator is computed as a weighted proportion. Weights reflect the survey design.
+The indicator is computed as a weighted proportion. Weights reflect the survey design and use the variable `hhweight`.
 
 ```{r national-estimate}
-sdg_4_2_2 <- hl_422 %>%
+sdg_4_2_2 <- Pop_Children %>%
   summarise(
     Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
     Denominator = sum(hhweight, na.rm = TRUE),
@@ -227,7 +227,7 @@ sdg_4_2_2 <- hl_422 %>%
 # print(sdg_4_2_2)
 ```
 
-> The **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of 5-year-olds participated in organised learning in `r RefYear` - `r DataYear`.
+> For  `r country`, the **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of `r RefAge`-year-old children  in organised learning, for the period `r RefYear` - `r DataYear`.
 
 
 # 5. Disaggregation by Sex
@@ -235,7 +235,7 @@ sdg_4_2_2 <- hl_422 %>%
 Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
 
 ```{r disagg-sex}
-sdg_4_2_2_sex <- hl_422 %>%
+sdg_4_2_2_sex <- Pop_Children %>%
   group_by(HL4) %>%
   summarise(
     Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
@@ -272,7 +272,7 @@ sdg_4_2_2_sex %>%
 Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  
 
 ```{r disagg-Area}
-sdg_4_2_2__location <- hl_422 %>%
+sdg_4_2_2__location <- Pop_Children %>%
   mutate(HH6_N = ifelse(HH6 == "URBAN", "Urban", "Rural"))%>%
   group_by(HH6_N) %>%
   summarise(
@@ -309,7 +309,7 @@ sdg_4_2_2__location %>%
 Here we disaggregate the indicator following the wealth levels. We use the quintile of wealth available in the variable `windex5`
 
 ```{r disagg-wealth}
-sdg_4_2_2_Wealth <- hl_422  %>%
+sdg_4_2_2_Wealth <- Pop_Children  %>%
    mutate(windex5 = as_factor(windex5)) %>%  # windex5 should be a factor
   group_by(windex5) %>%  
   summarise(
