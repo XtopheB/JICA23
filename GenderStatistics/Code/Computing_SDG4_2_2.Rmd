@@ -27,10 +27,10 @@ knitr::opts_chunk$set( message = FALSE,
 
 ```
 
-```{r country}
+```{r Country}
 # Since we may want to use other data set from other countries/years
-# Let us define the country and year as a parameter
-country <- "Lao"
+# Let us define the Country and year as a parameter
+MyCountry <- "Lao"
 DataYear <- 2023
 # Years taken into account for the definition of the indicator
 RefYear <-  DataYear -1 # The last school year recorded
@@ -41,7 +41,7 @@ RefAge <- 5
 ---
 
 # Introduction
-This tutorial demonstrates how to compute the **SDG Indicator 4.2.2: percentage of children in organized learning** (one year before the official primary entry age),  using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r DataYear`).
+This tutorial demonstrates how to compute the **SDG Indicator 4.2.2: percentage of children in organized learning** (one year before the official primary entry age),  using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r MyCountry`  (`r DataYear`).
 
 
 The definition of **organised learning** is the following: 
@@ -50,7 +50,7 @@ The definition of **organised learning** is the following:
 
 
 
-For **`r country`**, the reference cohort is children who were **`r RefAge`** years old in September **`r RefYear`**, meaning they were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**. The data source is the Multiple Indicator Cluster Survey (MICS) household roster (`hl.sav`).
+For **`r MyCountry`**, the reference cohort is children who were **`r RefAge`** years old in September **`r RefYear`**, meaning they were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**. The data source is the Multiple Indicator Cluster Survey (MICS) household roster (`hl.sav`).
 
 The tutorial follows a workflow for computing this indicator:
 
@@ -170,7 +170,7 @@ Now, we can define the target population.
 
 ```{r cohort-filter}
 
-# let's define the schooling period for this country/year
+# let's define the schooling period for this Country/year
 
 Year_Start <-(RefYear-RefAge)-1 
 Year_End <- RefYear-RefAge
@@ -227,7 +227,7 @@ sdg_4_2_2 <- Pop_Children %>%
 # print(sdg_4_2_2)
 ```
 
-> For  `r country`, the **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of `r RefAge`-year-old children  in organised learning, for the period `r RefYear` - `r DataYear`.
+> For  `r MyCountry`, the **National SDG 4.2.2 estimate is `r round(sdg_4_2_2$SDG_4_2_2, 1)`%** of `r RefAge`-year-old children  in organised learning, for the period `r RefYear` - `r DataYear`.
 
 
 # 5. Disaggregation by Sex
@@ -260,7 +260,7 @@ sdg_4_2_2_sex %>%
   scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
   labs(
     title    = "SDG 4.2.2 by Sex",
-    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
     x = NULL, y = "Children in organized learning (%)"
   ) +
    coord_flip() +
@@ -296,7 +296,7 @@ sdg_4_2_2__location %>%
   scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
   labs(
     title    = "SDG 4.2.2 by location",
-    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
     x = NULL, y = "Children in organized learning (%)"
   ) +
    coord_flip() +
@@ -330,7 +330,7 @@ sdg_4_2_2_Wealth %>%
   scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
   labs(
     title    = "SDG 4.2.2 by Wealth levels (quintile)",
-    subtitle = paste(country, "- School Year", RefYear, "-", DataYear),
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
     x = NULL, y = "Children in organized learning (%)"
   ) +
    coord_flip() +
@@ -353,11 +353,11 @@ write_csv(sdg_4_2_2_Wealth, "../output/sdg_4_2_2_results_by_wealth.csv")
 
 ```{r outputreport, eval=FALSE, include=FALSE}
 # Compiling manually to have the report produced in another directory
-# The name of the output file depends on "country" and "year"
+# The name of the output file depends on "Country" and "year"
 # IMPORTANT:  This chunk needs to be manually computed when the report is ready
 
-# The name of the country may have blanks, and comma, so let's change that: 
- CountryName <-  country %>%
+# The name of the Country may have blanks, and comma, so let's change that: 
+ CountryName <-  MyCountry %>%
    str_remove_all(",") %>%
   str_remove_all(" ")
 

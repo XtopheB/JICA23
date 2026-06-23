@@ -28,17 +28,17 @@ knitr::opts_chunk$set( message = FALSE,
 
 ```
 
-```{r country}
+```{r Country}
 # Since we may want to use other data set from other countries/years
-# Let us define the country and year as a parameter
-country <- "Lao"
+# Let us define the Country and year as a parameter
+MyCountry <- "Lao"
 DataYear <-  "2023"
 
 ```
 
 # Introduction
 
-This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r country`  (`r DataYear`).
+This tutorial demonstrates how to compute **SDG indicator 5.3.1: Child Marriage** using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r MyCountry`  (`r DataYear`).
 
 SDG 5.3.1 measures:
 
@@ -84,7 +84,7 @@ The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`
 
 ```{r import}
 #Create a data frame called df which stores the MICS data
-# This data set will change for a different country
+# This data set will change for a different Country
 rawdf <- read_spss("../Data/wm.sav")
 ```
 
@@ -199,7 +199,7 @@ df %>%
     title = "Interview Status",
     x = "",
     y = "Number of Women",
-    caption = paste0("Source: MICS - ", country,", (", DataYear,")"),
+    caption = paste0("Source: MICS - ", MyCountry,", (", DataYear,")"),
     fill = "Interview result"
   ) +
   
@@ -239,7 +239,7 @@ ggplot() +
     title = "Distribution of Women's Age",
     x = "Age",
     y = "Frequency", 
-    caption = paste0("Source: MICS - ", country,", (", DataYear,")"),
+    caption = paste0("Source: MICS - ", MyCountry,", (", DataYear,")"),
   ) +
   theme_minimal()
 ```
@@ -263,7 +263,7 @@ ggplot(df, aes(x = wmweight)) +
     title = "Distribution of Sampling Weights",
     x = "Sampling Weight",
     y = "Frequency", 
-   caption = paste0("Source: MICS - ", country,", (", DataYear,")")  ) +
+   caption = paste0("Source: MICS - ", MyCountry,", (", DataYear,")")  ) +
   theme_minimal()
 ```
 
@@ -291,7 +291,7 @@ ggplot(df, aes(x = WAGEM)) +
     title = "Age at First Marriage",
     x = "Age at first marriage",
     y = "Frequency",
-    caption = paste0("Source: MICS - ", country,", (", DataYear,")",
+    caption = paste0("Source: MICS - ", MyCountry,", (", DataYear,")",
      " - Nb of respondants =", nrow(df) ) 
     ) +
   theme_minimal()
@@ -346,7 +346,7 @@ sdg_5_3_1 <- wm_20_24 %>%
 # Making a nice table
 kable(sdg_5_3_1,
       digits = 1,
-      caption = paste0("SDG 5.3.1 - ",country,", (", DataYear,")"))
+      caption = paste0("SDG 5.3.1 - ",MyCountry,", (", DataYear,")"))
 ```
 
 # 12. Disaggregation by Location
@@ -370,7 +370,7 @@ sdg_5_3_1_location <- wm_20_24 %>%
 # Making a nice table
 kable(sdg_5_3_1_location,
       digits = 1, 
-      caption = paste0("SDG 5.3.1 by Area - ",country," (", DataYear,")"))
+      caption = paste0("SDG 5.3.1 by Area - ",MyCountry," (", DataYear,")"))
 ```
 
 
@@ -391,7 +391,7 @@ ggplot()+
     title = "SDG 5.3.1 by Location",
     x = "Location ",
     y = "SDG 5.3.1 (in %)", 
-    caption = paste0("Report for ",country," (", DataYear, ")"),
+    caption = paste0("Report for ",MyCountry," (", DataYear, ")"),
   ) +
   coord_flip() +
   theme_minimal()
@@ -405,14 +405,14 @@ The final results are saved as a CSV file, exported directly to the *output* dir
 results <- sdg_5_3_1 %>%
   mutate(across(where(is.numeric), round, 2)) %>%  # Only 2 digits
   mutate(
-    country = country,
+    country = MyCountry,
     year = DataYear,
     unit = "Percent"
   ) %>%
   relocate(indicator, country, year, numerator, denominator, SDG_5_3_1, unit)
 
-# The name of the output file depends on "country" and "year"
-write_csv(results, paste0("../Output/SDG_5_3_1_report_",country,"-", DataYear,".csv"))
+# The name of the output file depends on "Country" and "year"
+write_csv(results, paste0("../Output/SDG_5_3_1_report_",MyCountry,"-", DataYear,".csv"))
 ```
 
 # Conclusion
@@ -435,11 +435,11 @@ The same general approach can be adapted to many other SDG indicators derived fr
 
 ```{r outputreport, eval=FALSE, include=FALSE}
 # Compiling manually to have the report produced in another directory
-# The name of the output file depends on "country" and "year"
+# The name of the output file depends on "Country" and "year"
 # IMPORTANT:  This chunk needs to be manually computed when the report is ready
 
-# The name of the country may have blanks, and comma, so let's change that: 
- CountryName <-  country %>%
+# The name of the Country may have blanks, and comma, so let's change that: 
+ CountryName <-  MyCountry %>%
    str_remove_all(",") %>%
   str_remove_all(" ")
 
