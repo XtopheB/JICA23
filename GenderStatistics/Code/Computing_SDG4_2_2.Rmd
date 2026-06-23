@@ -350,5 +350,32 @@ write_csv(sdg_4_2_2_Wealth, "../output/sdg_4_2_2_results_by_wealth.csv")
 ```
 
 
+
+```{r outputreport, eval=FALSE, include=FALSE}
+# Compiling manually to have the report produced in another directory
+# The name of the output file depends on "country" and "year"
+# IMPORTANT:  This chunk needs to be manually computed when the report is ready
+
+# The name of the country may have blanks, and comma, so let's change that: 
+ CountryName <-  country %>%
+   str_remove_all(",") %>%
+  str_remove_all(" ")
+
+# HTML version
+rmarkdown::render(
+  "Computing_SDG4_2_2.Rmd",
+  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".html"),
+  output_dir = "../Reports"
+)
+
+# Word version
+rmarkdown::render(
+  "Computing_SDG4_2_2.Rmd",
+  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".docx"),
+  output_dir = "../Reports"
+)
+
+```
+
 ---
 *Report generated with R `r paste(R.version$major, R.version$minor, sep = ".")` · `r format(Sys.time(), "%Y-%m-%d %H:%M")`*

@@ -436,19 +436,23 @@ The same general approach can be adapted to many other SDG indicators derived fr
 ```{r outputreport, eval=FALSE, include=FALSE}
 # Compiling manually to have the report produced in another directory
 # The name of the output file depends on "country" and "year"
+# IMPORTANT:  This chunk needs to be manually computed when the report is ready
+
+# The name of the country may have blanks, and comma, so let's change that: 
+ CountryName <-  country %>%
+   str_remove_all(",") %>%
+  str_remove_all(" ")
 
 rmarkdown::render(
   "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",country,"-", DataYear,".html"),
+  output_file = paste0("SDG_5_3_1_report_",CountryName,"-", DataYear,".html"),
   output_dir = "../Reports"
 )
-```
 
-
-```{r outputWord, eval = FALSE, include=FALSE}
+# Word version
 rmarkdown::render(
   "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",country,"-", DataYear,".docx"),
+  output_file = paste0("SDG_5_3_1_report_",CountryName,"-", DataYear,".docx"),
   output_dir = "../Reports"
 )
 
