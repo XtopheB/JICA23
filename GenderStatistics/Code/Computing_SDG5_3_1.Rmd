@@ -1,16 +1,16 @@
 ---
 title: "Computing SDG 5.3.1 Using MICS Data in R"
-author: "Sinovia Moonie, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
+author: "Sinovia Moonie,<br>  Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  pdf_document:
+    toc: yes
   word_document:
     toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
