@@ -1,14 +1,14 @@
 ---
 title: "Exercises with Survey data"
 author: "Christophe Bontemps (SIAP)"
-date: "29-08-2024"
+date: Sys.Date()
 output:
-  word_document:
-    toc: no
   html_document:
     toc: yes
     code_folding: show
     df_print: paged
+  word_document:
+    toc: no
   pdf_document:
     toc: no
 ---
@@ -28,41 +28,43 @@ First we need to load some useful packages (libraries).
 
 ```{r include=FALSE}
 library(tidyverse) 
+library(modelsummary)
 ```
 
 ### Here are the steps to achieve:
 
-* First we load the data
-* Second we compute some averages 
-* Third we define new variables 
-
-> For this exercise, you will not need to download data on your computer. We read the data directly in R, from a server, and then store that in a data frame in R.
+* First, load the data
+* Second, create new variables
+* Third, define new variables 
+* Finally, run a simple regression model
 
 
 # Prerequisite: 
+* Check that you have a folder structure, with directories named `code`, `data`, `output` (and other if you want). The data set *Household_Survey.csv*  must be in the `data` folder, while the file *ExerciseWithSurveyData.Rmd*  should be in the `code` folder. 
 
-* Save the file ***ExerciseWithSurveyData.Rmd*** on a folder in your computer and open it with RStudio (hint: double-click) 
-*  Change the author with your name (*hint: rpelace my name with yours and be careful of the keeping the " "* )
-* Compile or `knit` the document to create an Html or Word file
+* Open the file *ExerciseWithSurveyData.Rmd* with RStudio 
+* Change the author with your name (*hint: be careful of  keeping  " "* )
 
-**All along this exercise, answer all questions in the .Rmd document in RStudio**  
+
+> All along this exercise, you must answer all questions in the .Rmd document in RStudio only 
+
 
 # Working with Survey data 
 
-###  First we load the data
+###  First, load the data
 The data we will be working with are survey-type data, 
 
 ```{r }
-household_survey <- read.csv2("..Data/Household_Survey.csv")
+household_survey <- read.csv("../data/Household.csv")
 ```
 
-Now we have a data set, we can view it on the top-right panel. 
+Now we have a data set, you can view it (use the  top-right panel. 
 
 ## Exercise 1:
 
 *Write your answers directly below, or create an R code chunk to compute the solution*. 
 
- - How many observations (households) has this file? 
+- How many observations (households) has this file? 
 - How many variables? 
 
 *(hint: you can use the function `nrow()`)*
@@ -70,29 +72,25 @@ Now we have a data set, we can view it on the top-right panel.
 **Your answer:**
 
 
+
 ## Exercise 2:
-What is the format of the variable *location* ?  (hint: Look in the *environment tab* in the top-right panel and see the description of the variable *location* in the data frame *household_survey*. Alternatively, you can use the function `str()`  in a code chunk. 
+What is the format of the variable *location* ?  (hint: Look in the *environment tab* in the top-right panel and see the description of the variable *location* in the data frame *household_survey*. 
+Alternatively, you can use the function `str()`  in a code chunk. 
 
 **Your answer:**
 
 
 
 ## Exercise 3:
-Explain what this code is achieving. 
+Explain what this code is achieving. (run the code) 
 
 
-```{r}
+```{r ruraldata}
 # Code using filter() function
 household_rural <- household_survey %>%
   filter(location =="Rural" )
 ```
 
-Hint: The code above is doing exactly the same thing (but storing inwith a different name) than the code below: 
-
-```{r}
-## NB This can be done with subset() too
-household_rural_bis <- subset(household_survey, location =="Rural" )
-```
 
 **Your answer:**
 
@@ -116,20 +114,23 @@ total_rural  <- household_rural %>%
 
 # Step 3: Calculate the number of rural households 
 Nb_rural <-  household_rural %>%
-  count()
+  count() %>%
+  pull()
 
 # Step 4: Compute the average income for the rural population
-avg_income_rural <- total_rural$total / Nb_rural$n
+avg_income_rural <- total_rural$total / Nb_rural
 
 # Display the result
 print(avg_income_rural)
 
 ```
-So, the average income for **rural** population  is *`r round(avg_income_rural)`*. 
+So, the average income for **rural** population  is *`r round(avg_income_rural, 2)`*. 
 
-## Exercise 4
+## Exercise 
 
-Replicate this exercise  for the *Urban* population (hint: copy paste the previous code). Name the result *avg_income_urban* and compare with rural population. Which one is greater?
+Replicate this exercise  for the *Urban* population. Name the result *avg_income_urban* and compare with rural population. Which one is greater?
+
+
  
 **Your answer:**
 
@@ -142,21 +143,23 @@ Replicate this exercise  for the *Urban* population (hint: copy paste the previo
 
 ## Exercise 5
 
-After examining the data frame  *household_survey*  identify the variable that represents the weight of each household. (hint: This variable must be numerical, with values between 0 and 1)
+After examining the data frame  *household_survey* 
+-identify the variable that represents the weight of each household. (hint: This variable must be numerical, with values between 0 and 1)
+- provide some summary statistics of this variable (Hint, you can  use the function `summary()`)  
 
 ```{r}
 summary(household_survey$weight)
 ```
 
-**Your answer** (Hint, you can also use the function `summary()`in an R chunk)  
+**Your answer** 
 
 
 
 
 **Extra bonus question**
-Is there something strange with these weights? 
+Is there something important to notice with these weights? 
 
-***Yes!*** Having a household with weight equal to 0 is not right, this would mean that we are not counting that household at all in our computation
+***Yes!*** Having a household with weight equal to 0  means that some households will have no weights in any weight computation. 
 
 
 ## Computing the weighted average for rural population 
@@ -175,24 +178,25 @@ Below is the code that computes the weighted average income for the rural popula
  
 ```{r}
 # Step 2bis: Calculate total weighted  income
-total_weighted_rural  <- household_rural %>%
-  mutate(weighted_income = income * weight) %>%   # <- This computes the weighted income
-  summarize(total_weighted_income = sum(weighted_income))
+total_rural_w  <- household_rural %>%
+  mutate(income_w = income * weight) %>%   # <- This computes the weighted income
+  summarize(total_w = sum(income_w))
 
 
 # Step 3bis: Calculate the weighted number of households 
-Nb_weighted_rural <-  household_rural %>%
-  summarize(total_weights = sum(weight))
+Nb_rural_w <-  household_rural %>%
+  summarize(total_w = sum(weight)) %>%
+  pull()
   
 # Step 4bis: Compute the weighted average income
-avg_weighted_income <- total_weighted_rural$total_weighted_income / Nb_weighted_rural$total_weights
+avg_income_rural_w <- total_rural_w$total_w / Nb_rural_w
 
-print(avg_weighted_income)
+print(avg_income_rural_w)
 
 ```
 ## Exercise 7  
 
-Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rurla population. Which one is greater?    
+Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rural population. Which one is greater?    
 
 **Your answer**  
 
@@ -202,12 +206,14 @@ Compare the weighted average income (*avg_weighted_rural* ) with the simple aver
 > Note that we can also achieve the same computation in a few line of code ;-)
 
 ```{r}
-avg_weighted_income2 <- household_survey %>%
+avg_income_rural_w2 <- household_survey %>%
    filter(location =="Rural" ) %>%            # Keeping only rural households
-   summarize(weighted_avg_income = sum(income * weight) / sum(weight))   # Computing weighted average
+   summarize(avg_income_w =
+               sum(income * weight) / sum(weight)) %>%  # Computing weighted average
+  pull() 
 
 # printing the result (stored in a data frame)
-print(avg_weighted_income2$weighted_avg_income)
+print(avg_income_rural_w)
 ```
 
 # Creating a specific category 
@@ -230,7 +236,7 @@ household_survey <- household_survey %>%
 
 * The household_size is greater than 5
 AND
-*the income is below $50,000.
+*the household income is below $50,000.
 
 Hint: Use the previous code and change the simple condition for the following condition: 
 `household_size > 5 & income < 50000` as first argument of the `ifelse()` function.  The `&` symbol stands for AND between two logical conditions. 
@@ -248,6 +254,27 @@ household_survey <- household_survey %>%
                                   "Special Consideration", 
                                   "No Special Consideration"))
 ```
+
+
+# Run and analyse a simple regression
+
+The function used for running a regression is `lm()`
+
+```{r}
+reg <- lm(income~household_size+head_gender, data = household_survey)
+
+# table of results
+modelsummary(reg, stars = TRUE,
+shape = term ~ model + statistic,
+statistic = c("{std.error}", "{statistic}", "{p.value}"),
+gof_map = c("nobs", "r.squared"),
+fmt = 2,
+output = "flextable")
+
+```
+
+
+
 
 # Congratulations! 
 
