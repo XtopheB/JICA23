@@ -4,13 +4,13 @@ author: "Sinovia Moonie  <br> Statistician/Lecturer, Statistical Institute for A
 subtitle: '*A simple report*'
 date: "`r Sys.Date()`"
 output:
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
   pdf_document:
     toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
