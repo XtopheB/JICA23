@@ -3,12 +3,12 @@ title: "Exercises with Survey data"
 author: "Christophe Bontemps (SIAP)"
 date: "29-08-2024"
 output:
+  word_document:
+    toc: no
   html_document:
     toc: yes
     code_folding: show
     df_print: paged
-  word_document:
-    toc: no
   pdf_document:
     toc: no
 ---
@@ -19,8 +19,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # Overview
-This document contains both the instructions and some code to practice your R coding skills. 
-We'll provide hints  as well. 
+This document contains both the instructions and some code to help practice your data analytics skills.  We'll provide hints  as well. 
 The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. Consider this as a self-paced guided tour, follow me!  
 
 First we need to load some useful packages (libraries). 
@@ -51,10 +50,10 @@ library(tidyverse)
 # Working with Survey data 
 
 ###  First we load the data
-The data we will be working with are survey-type data, collected directly from an online server and loaded in R in a data frame named *household_survey*
+The data we will be working with are survey-type data, 
 
 ```{r }
-household_survey <- read.csv2("https://raw.githubusercontent.com/XtopheB/JICA23/main/Exercises/Household_Survey.csv")
+household_survey <- read.csv2("..Data/Household_Survey.csv")
 ```
 
 Now we have a data set, we can view it on the top-right panel. 
