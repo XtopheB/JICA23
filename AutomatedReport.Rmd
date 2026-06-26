@@ -1,6 +1,6 @@
 ---
 title: "A Fully Automated Report- revised during the class"
-subtitle: "TAPOS -JICA" 
+subtitle: "TAPOS" 
 author: "Christophe Bontemps"
 date: "`r format(Sys.time(), '%A, %d %B %Y, %H:%M')`"
 output:
