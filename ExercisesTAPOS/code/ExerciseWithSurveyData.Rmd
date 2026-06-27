@@ -157,12 +157,10 @@ total_rural  <- household_rural %>%
 
 # Step 3: Calculate the number of rural households 
 Nb_rural <-  household_rural %>%
-  count() %>%
-  pull()
+ nrow()
 
 # Step 4: Compute the average income for the rural population
 avg_income_rural <- total_rural$total / Nb_rural
-
 
 
 ```
@@ -198,6 +196,11 @@ After examining the data frame  *household_survey*
 
 
 **Your answer** 
+
+```{r}
+# Compute something that could help you describe the weights
+
+```
 
 
 
@@ -235,7 +238,7 @@ total_rural_w  <- household_rural %>%
 # Step 3bis: Calculate the weighted number of households 
 Nb_rural_w <-  household_rural %>%
   summarize(total_w = sum(weight)) %>%
-  pull()
+  pull()    # <- this function helps extracting a single value 
   
 # Step 4bis: Compute the weighted average income
 avg_income_rural_w <- total_rural_w$total_w / Nb_rural_w
@@ -245,7 +248,7 @@ print(avg_income_rural_w)
 ```
 ## Exercise 7:  
 
-Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rural population. Which one is greater?    
+Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the **rural** population. Which one is greater?    
 
 **Your answer:**  
 
@@ -296,20 +299,6 @@ household_survey <- household_survey %>%
 
 
 
-```{r}
-# Solution here 
-household_survey <- household_survey %>%
-  mutate(special_status = ifelse(householdsize > 5 & income < 50000, 
-                                  "Special Consideration", 
-                                  "No Special Consideration"))
-
-nb_special <- household_survey %>%
-  filter(special_status =="Special Consideration") %>%
-  nrow()
-
-```
-
-
 # Run and analyse a simple regression
 
 For this exercise, we will **not** take weights into consideration (although this is obviously possible). The function used for running a regression is `lm()`.
@@ -323,19 +312,10 @@ Regress `income` on the following explanatory variables:
 - `location`
 - `age`
 
-The regression result should similar to the table below: 
+
 
 ```{r }
-reg <- lm(income~householdsize+gender+location+age, data = household_survey)
 
-# table of results
-modelsummary(reg, stars = TRUE,
-shape = term ~ model + statistic,
-statistic = c("{std.error}", "{statistic}", "{p.value}"),
-gof_map = c("nobs", "r.squared"),
-fmt = 2,
-escape = TRUE
-)
 
 ```
 
