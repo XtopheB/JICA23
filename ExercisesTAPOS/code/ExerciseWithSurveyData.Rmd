@@ -3,20 +3,34 @@ title: "Exercises with Survey data"
 author: "Christophe Bontemps (SIAP)"
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: no
+  word_document:
+    toc: no
   html_document:
     toc: yes
     code_folding: show
     df_print: paged
-  word_document:
-    toc: no
-  pdf_document:
-    toc: no
+
+header-includes:
+  - \usepackage{float}
+  - \floatplacement{table}{H}
+
 ---
 
-```{rsetup, include=FALSE}
-# Set global chunk options to hide code
-knitr::opts_chunk$set(echo = FALSE)
+
+```{r setup, include=FALSE}
+# My default setting for this document
+knitr::opts_chunk$set(
+  echo = FALSE, 
+	message = FALSE,
+	warning = FALSE,
+	cache = FALSE,
+	comment = NA
+)
 ```
+
+
 
 # Overview
 This document contains both the instructions and some code to help practice your data analytics skills.  We'll provide hints  as well. 
@@ -24,52 +38,52 @@ The goal is to work with some basic elements needed when using survey data and c
 
 First we need to load some useful packages (libraries). 
 
-> These libraries must have been installed beforefand using the bottom-right panel of RStudio. Normally you have these libraies already installed.  
+> These libraries must have been installed beforehand using the bottom-right panel of RStudio. Normally you have these libraries already installed.  
 
-```{r include=FALSE}
+```{r , include=FALSE}
 library(tidyverse) 
 library(modelsummary)
+library(knitr)
 ```
 
-```{r datageneration}
-set.seed(42)
-n <- 2000
 
-# ── Demographics ─────────────────────────────────────────────
-household_id   <- 1:n
-household_size <- sample(1:8, n, replace = TRUE,
-                         prob = c(0.10,0.20,0.25,0.20,0.12,0.07,0.04,0.02))
-head_gender    <- sample(c("Male","Female"), n, replace = TRUE, prob = c(0.60,0.40))
-location       <- sample(c("Urban","Rural","Suburb"), n, replace = TRUE,
-                         prob = c(0.45, 0.35, 0.20))
 
-# Age strongly tied to location → collinearity (so location absorbs age)
-loc_mean_age <- ifelse(location == "Rural", 55,
-                       ifelse(location == "Suburb", 45, 33))
-head_age <- pmax(18, pmin(85, round(rnorm(n, mean = loc_mean_age, sd = 5))))
-
-# ── Income (log-linear) ──────────────────────────────────────
-log_income <- (
-  9.0
-  + 0.35 * (head_gender == "Male")
-  + 0.45 * (location == "Urban")
-  - 0.30 * (location == "Rural")
-  + 0.04 * household_size
-  + rnorm(n, 0, 0.60)
-)
-income <- round(exp(log_income), 2)
-
-# ── Weights ──────────────────────────────────────────────────
-weight <- round(runif(n, 0.10, 1.00), 4)
-zero_idx            <- sample(n, 15)
-weight[zero_idx]    <- 0
-outlier_idx         <- sample(setdiff(seq_len(n), zero_idx), 2)
-weight[outlier_idx] <- 99
-
-# ── Export ───────────────────────────────────────────────────
-survey <- data.frame(household_id, household_size, income,
-                     head_gender, head_age, location, weight)
-write.csv(survey, "../data/Household2026.csv", row.names = FALSE)
+```{r datageneration, include=FALSE}
+# set.seed(42)
+# n <- 2000
+# 
+# householdsize <- sample(1:8, n, replace = TRUE,
+#                          prob = c(0.10,0.20,0.25,0.20,0.12,0.07,0.04,0.02))
+# gender    <- sample(c("Male","Female"), n, replace = TRUE, prob = c(0.60,0.40))
+# location  <- sample(c("Urban","Rural","Suburb"), n, replace = TRUE,
+#                          prob = c(0.45, 0.35, 0.20))
+# 
+# # Age strongly tied to location → collinearity (so location absorbs age)
+# loc_mean_age <- ifelse(location == "Rural", 55,
+#                        ifelse(location == "Suburb", 45, 33))
+# age <- pmax(18, pmin(85, round(rnorm(n, mean = loc_mean_age, sd = 5))))
+# # --- Income  ---
+# log_income <- (
+#   9.0
+#   + 0.35 * (gender == "Male")
+#   + 0.45 * (location == "Urban")
+#   - 0.30 * (location == "Rural")
+#   + 0.04 * householdsize
+#   + rnorm(n, 0, 0.60)
+# )
+# income <- round(exp(log_income), 2)
+# 
+# # --- Weights ----
+# weight <- round(runif(n, 0.10, 1.00), 4)
+# zero_idx            <- sample(n, 15)
+# weight[zero_idx]    <- 0
+# outlier_idx         <- sample(setdiff(seq_len(n), zero_idx), 2)
+# weight[outlier_idx] <- 99
+# 
+# # ---- Export ----
+# survey <- data.frame(householdsize, income,
+#                      gender, age, location, weight)
+# write.csv(survey, "../data/Household2026.csv", row.names = FALSE)
 ```
 
 
@@ -95,13 +109,14 @@ write.csv(survey, "../data/Household2026.csv", row.names = FALSE)
 # Working with Survey data 
 
 ###  First, load the data
-The data we will be working with are survey-type data, 
+The data are survey-type data. The file is a csv file named `Household2026.csv` in the folder `data`. Use the function `read.csv()` to load the data. 
 
 ```{r }
 household_survey <- read.csv("../data/Household2026.csv")
 ```
 
-Now we have a data set, you can view it (use the  top-right panel. 
+Now we have a data set, you can view it (use the  top-right panel or `summary()`). 
+
 
 ## Exercise 1:
 
@@ -116,8 +131,24 @@ Now we have a data set, you can view it (use the  top-right panel.
 
 
 
+You should see the following variables:  *`r names(household_survey)`*
+
+
+
+**Alternatively**, you can use the code below: 
+
+```{r echo=TRUE}
+datasummary_skim(household_survey, 
+                 title = "Continuous variables")
+```
+
+
 ## Exercise 2:
-What is the format of the variable *location* ?  (hint: Look in the *environment tab* in the top-right panel and see the description of the variable *location* in the data frame *household_survey*. 
+
+What is the format of the variable `location` ? 
+
+**Hint:** Look in the *environment tab* in the top-right panel and see the description of the variable *location* in the data frame *household_survey*. 
+
 Alternatively, you can use the function `str()`  in a code chunk. 
 
 **Your answer:**
@@ -128,7 +159,7 @@ Alternatively, you can use the function `str()`  in a code chunk.
 Explain what this code is achieving. (run the code) 
 
 
-```{r ruraldata}
+```{r ruraldata, echo = TRUE}
 # Code using filter() function
 household_rural <- household_survey %>%
   filter(location =="Rural" )
@@ -146,7 +177,7 @@ household_rural <- household_survey %>%
 
 We want to compute the average income of the rural population: We do that in 4 steps:
 
-```{r}
+```{r rural, echo =TRUE}
 # Step 1: Create a data frame with only the  rural population (using filter()) 
 household_rural <- household_survey %>%
   filter(location =="Rural" )
@@ -163,15 +194,17 @@ Nb_rural <-  household_rural %>%
 # Step 4: Compute the average income for the rural population
 avg_income_rural <- total_rural$total / Nb_rural
 
-# Display the result
-print(avg_income_rural)
+
 
 ```
+
 So, the average income for **rural** population  is *`r round(avg_income_rural, 2)`*. 
 
-## Exercise 
+## Exercise 4
 
-Replicate this exercise  for the *Urban* population. Name the result *avg_income_urban* and compare with rural population. Which one is greater?
+Replicate this exercise  for the *Urban* population. Name the result *avg_income_urban* and compare with rural population.
+
+- Which one is greater?
 
 
  
@@ -187,10 +220,13 @@ Replicate this exercise  for the *Urban* population. Name the result *avg_income
 ## Exercise 5
 
 After examining the data frame  *household_survey* 
--identify the variable that represents the weight of each household. (hint: This variable must be numerical, with values between 0 and 1)
-- provide some summary statistics of this variable (Hint, you can  use the function `summary()`)  
+-Identify the variable that represents the weight of each household. 
 
-```{r}
+**Hint:** This variable is numerical, with values between 0 and 1.
+
+- provide some summary statistics of this variable (you can  use the function `summary()`)  
+
+```{r , include= FALSE}
 summary(household_survey$weight)
 ```
 
@@ -202,24 +238,27 @@ summary(household_survey$weight)
 **Extra bonus question**
 Is there something important to notice with these weights? 
 
-***Yes!*** Having a household with weight equal to 0  means that some households will have no weights in any weight computation. 
+
 
 
 ## Computing the weighted average for rural population 
- We need to change our way to compute the sums in our previous computation
+We need to change our way to compute the sums in our previous computation
  
 ## Exercise 6 
 
-Create a new variable *total_weighted_rural* in the data.frame *household_rural*  that will multiply the  income of each household (each line) with its weight. Hint: you can use the `%>%` operator and the `mutate()` function to create a new variable.
+Create a new variable *total_weighted_rural* in the data.frame *household_rural*  that will multiply the income of each household with its weight. 
 
-**Your answer**  
+**Hint:** you can use the `%>%` operator and the `mutate()` function to create a new variable.
+
+**Your answer:**  
 
 
 
 
-Below is the code that computes the weighted average income for the rural population. Please check the difference and how we have modified the 3 steps from previous average computation.   
+Below is the code that computes the weighted average income for the rural population. Please check the difference and how we have modified the 3 steps from previous average computation. 
+
  
-```{r}
+```{r, echo = TRUE}
 # Step 2bis: Calculate total weighted  income
 total_rural_w  <- household_rural %>%
   mutate(income_w = income * weight) %>%   # <- This computes the weighted income
@@ -241,14 +280,14 @@ print(avg_income_rural_w)
 
 Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rural population. Which one is greater?    
 
-**Your answer**  
+**Your answer:**  
 
 
 
 
 > Note that we can also achieve the same computation in a few line of code ;-)
 
-```{r}
+```{r, echo=TRUE}
 avg_income_rural_w2 <- household_survey %>%
    filter(location =="Rural" ) %>%            # Keeping only rural households
    summarize(avg_income_w =
@@ -270,21 +309,21 @@ Here is the code that uses the `ifelse()`function for testing whether a conditio
 
 ```{r}
 household_survey <- household_survey %>%
-  mutate(income_category = ifelse(income < 50000, "Low", "High"))
+  mutate(incomecategory = ifelse(income < 50000, "Low", "High"))
 ```
 
 ## Exercise 8: 
 
 > Task: Create a new column *special_status* that indicates whether a household should receive special consideration based on two conditions:
 
-* The household_size is greater than 5
+* The household size is greater than 5
 AND
-*the household income is below $50,000.
+* the household income is below $50,000.
 
 Hint: Use the previous code and change the simple condition for the following condition: 
-`household_size > 5 & income < 50000` as first argument of the `ifelse()` function.  The `&` symbol stands for AND between two logical conditions. 
+`householdsize > 5 & income < 50000` as first argument of the `ifelse()` function.  The `&` symbol stands for AND between two logical conditions. 
 
-**Your answer**  
+**Your answer:**  
 
 
 
@@ -293,7 +332,7 @@ Hint: Use the previous code and change the simple condition for the following co
 ```{r}
 # Solution here 
 household_survey <- household_survey %>%
-  mutate(special_status = ifelse(household_size > 5 & income < 50000, 
+  mutate(special_status = ifelse(householdsize > 5 & income < 50000, 
                                   "Special Consideration", 
                                   "No Special Consideration"))
 ```
@@ -301,10 +340,28 @@ household_survey <- household_survey %>%
 
 # Run and analyse a simple regression
 
-The function used for running a regression is `lm()`
+For this exercise, we will **not** take weights into consideration (although this is obviously possible). The function used for running a regression is `lm()`
 
-```{r}
-reg <- lm(income~household_size+head_gender, data = household_survey)
+## Exercise 9
+
+Regress `income` on the following explanatory variables: 
+
+- `householdsize`
+- `gender`
+- `location`
+- `age`
+
+The regression result should similar to the table below: 
+
+**Hint:** proceed in two steps: 
+
+- Compute the regression using the function `lm()` and store the result in an object
+- Use the function summary() to get the results. 
+
+
+
+```{r }
+reg <- lm(income~householdsize+gender+location+age, data = household_survey)
 
 # table of results
 modelsummary(reg, stars = TRUE,
@@ -312,15 +369,26 @@ shape = term ~ model + statistic,
 statistic = c("{std.error}", "{statistic}", "{p.value}"),
 gof_map = c("nobs", "r.squared"),
 fmt = 2,
-output = "flextable")
+escape = TRUE
+)
 
 ```
 
+# Exercise 10:
+
+> Interpret the results 
+
+- Which parameters/variables are significant? 
+- What can you say about the result of the regression? 
+- How do you interpret the coefficient associated with `genderMale`
+
+
+**Your answer:**  
 
 
 
 # Congratulations! 
 
-This is the end. Normally you should be able to *knit* this file and send the output (word format) to *christophe.bontemps@un.org.*
+This is the end. Normally you should be able to *knit* this file and send the output (word or Html  format) to *christophe.bontemps@un.org* by Friday 3 July. 
 
 Thanks! 
