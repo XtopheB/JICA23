@@ -5,17 +5,18 @@ date: "`r Sys.Date()`"
 output:
   pdf_document:
     toc: no
-  word_document:
-    toc: no
   html_document:
     toc: yes
+    toc_float: true
+    keep_md: no
     code_folding: show
+    code_download: true
     df_print: paged
-
+  word_document:
+    toc: no
 header-includes:
   - \usepackage{float}
   - \floatplacement{table}{H}
-
 ---
 
 
@@ -28,13 +29,22 @@ knitr::opts_chunk$set(
 	cache = FALSE,
 	comment = NA
 )
+# avoid scientific notation
+options(scipen = 999)
+
 ```
 
 
 
 # Overview
-This document contains both the instructions and some code to help practice your data analytics skills.  We'll provide hints  as well. 
-The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. Consider this as a self-paced guided tour, follow me!  
+This document contains both the instructions and *some* code to help practice your data analytics skills.  We'll provide hints as well! 
+The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. Consider this as a self-paced guided tour ;-).
+
+## Instructions: 
+Follow the steps, and **answer directly in the Rmd document!**
+
+
+# Let's start!
 
 First we need to load some useful packages (libraries). 
 
@@ -43,7 +53,6 @@ First we need to load some useful packages (libraries).
 ```{r , include=FALSE}
 library(tidyverse) 
 library(modelsummary)
-library(knitr)
 ```
 
 
@@ -88,7 +97,7 @@ library(knitr)
 
 
 
-### Here are the steps to achieve:
+## Here are the steps to achieve:
 
 * First, load the data
 * Second, create new variables
@@ -96,7 +105,7 @@ library(knitr)
 * Finally, run a simple regression model
 
 
-# Prerequisite: 
+## Prerequisite: 
 * Check that you have a folder structure, with directories named `code`, `data`, `output` (and other if you want). The data set *Household_Survey.csv*  must be in the `data` folder, while the file *ExerciseWithSurveyData.Rmd*  should be in the `code` folder. 
 
 * Open the file *ExerciseWithSurveyData.Rmd* with RStudio 
@@ -131,6 +140,8 @@ Now we have a data set, you can view it (use the  top-right panel or `summary()`
 
 
 
+
+
 You should see the following variables:  *`r names(household_survey)`*
 
 
@@ -139,7 +150,7 @@ You should see the following variables:  *`r names(household_survey)`*
 
 ```{r echo=TRUE}
 datasummary_skim(household_survey, 
-                 title = "Continuous variables")
+                 title = "Descriptive statistics")
 ```
 
 
@@ -198,9 +209,9 @@ avg_income_rural <- total_rural$total / Nb_rural
 
 ```
 
-So, the average income for **rural** population  is *`r round(avg_income_rural, 2)`*. 
+So, the average income for **rural** population  is **`r round(avg_income_rural, 1)`**. 
 
-## Exercise 4
+## Exercise 4:
 
 Replicate this exercise  for the *Urban* population. Name the result *avg_income_urban* and compare with rural population.
 
@@ -217,7 +228,7 @@ Replicate this exercise  for the *Urban* population. Name the result *avg_income
 
 ### But Wait! This file is a survey, and We have to take into account the weight of each observation! 
 
-## Exercise 5
+## Exercise 5:
 
 After examining the data frame  *household_survey* 
 -Identify the variable that represents the weight of each household. 
@@ -244,7 +255,7 @@ Is there something important to notice with these weights?
 ## Computing the weighted average for rural population 
 We need to change our way to compute the sums in our previous computation
  
-## Exercise 6 
+## Exercise 6: 
 
 Create a new variable *total_weighted_rural* in the data.frame *household_rural*  that will multiply the income of each household with its weight. 
 
@@ -276,7 +287,7 @@ avg_income_rural_w <- total_rural_w$total_w / Nb_rural_w
 print(avg_income_rural_w)
 
 ```
-## Exercise 7  
+## Exercise 7:  
 
 Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the rural population. Which one is greater?    
 
@@ -307,7 +318,7 @@ print(avg_income_rural_w)
 
 Here is the code that uses the `ifelse()`function for testing whether a condition is true ( whether *income* is lower than 5000, here ) and returns "low" if yes and "high if not in this case,  while the  `mutate()` function creates a new variable *income_category* 
 
-```{r}
+```{r, echo=TRUE}
 household_survey <- household_survey %>%
   mutate(incomecategory = ifelse(income < 50000, "Low", "High"))
 ```
@@ -316,14 +327,14 @@ household_survey <- household_survey %>%
 
 > Task: Create a new column *special_status* that indicates whether a household should receive special consideration based on two conditions:
 
-* The household size is greater than 5
-AND
+* The household size is greater than 5, **and**
 * the household income is below $50,000.
 
-Hint: Use the previous code and change the simple condition for the following condition: 
+**Hint:** Use the previous code and change the simple condition for the following condition: 
 `householdsize > 5 & income < 50000` as first argument of the `ifelse()` function.  The `&` symbol stands for AND between two logical conditions. 
 
-**Your answer:**  
+**Your answer:**  Compute the number of households under the *special status* category. 
+
 
 
 
@@ -335,14 +346,19 @@ household_survey <- household_survey %>%
   mutate(special_status = ifelse(householdsize > 5 & income < 50000, 
                                   "Special Consideration", 
                                   "No Special Consideration"))
+
+nb_special <- household_survey %>%
+  filter(special_status =="Special Consideration") %>%
+  nrow()
+
 ```
 
 
 # Run and analyse a simple regression
 
-For this exercise, we will **not** take weights into consideration (although this is obviously possible). The function used for running a regression is `lm()`
+For this exercise, we will **not** take weights into consideration (although this is obviously possible). The function used for running a regression is `lm()`.
 
-## Exercise 9
+## Exercise 9:
 
 Regress `income` on the following explanatory variables: 
 
@@ -352,13 +368,6 @@ Regress `income` on the following explanatory variables:
 - `age`
 
 The regression result should similar to the table below: 
-
-**Hint:** proceed in two steps: 
-
-- Compute the regression using the function `lm()` and store the result in an object
-- Use the function summary() to get the results. 
-
-
 
 ```{r }
 reg <- lm(income~householdsize+gender+location+age, data = household_survey)
@@ -374,13 +383,20 @@ escape = TRUE
 
 ```
 
+**Hint:** proceed in two steps: 
+
+- Compute the regression using the function `lm()` and store the result in an object
+- Use the function summary() to get the results. 
+
+
+
 # Exercise 10:
 
 > Interpret the results 
 
 - Which parameters/variables are significant? 
 - What can you say about the result of the regression? 
-- How do you interpret the coefficient associated with `genderMale`
+- How do you interpret the coefficient associated with `genderMale`?
 
 
 **Your answer:**  
@@ -389,6 +405,6 @@ escape = TRUE
 
 # Congratulations! 
 
-This is the end. Normally you should be able to *knit* this file and send the output (word or Html  format) to *christophe.bontemps@un.org* by Friday 3 July. 
+This is the end. Normally you should be able to *knit* this file and send the output (word or Htmlformat) to *christophe.bontemps@un.org* by Friday 3 July. 
 
 Thanks! 
