@@ -4,6 +4,11 @@ subtitle: "Data Science for Official Statistics"
 author: "Christophe Bontemps"
 date:   "`r Sys.Date()`"
 output:
+ 
+  word_document:
+    # reference_docx: ../docs/KAZ-Template.docx
+    toc: no 
+    number_sections: true
   html_document: 
     df_print: paged
     always_allow_html: true
@@ -12,14 +17,9 @@ output:
     keep_md: no
     code_folding: show
     code_download: true
-  word_document:
-    #reference_docx: KAZ-Template.docx
-    toc: no 
-    number_sections: true
   pdf_document:
     toc: yes
     df_print: kable
- 
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
