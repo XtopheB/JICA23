@@ -1,0 +1,521 @@
+---
+title: "A step-by-step Data Analysis"
+subtitle: "Data Science for Official Statistics"
+author: "Christophe Bontemps"
+date:   "`r Sys.Date()`"
+output:
+  html_document: 
+    df_print: paged
+    always_allow_html: true
+    toc: yes
+    toc_float: true
+    keep_md: no
+    code_folding: show
+    code_download: true
+  word_document:
+    #reference_docx: KAZ-Template.docx
+    toc: no 
+    number_sections: true
+  pdf_document:
+    toc: yes
+    df_print: kable
+ 
+always_allow_html: true  # <-- bypass errors caused by interactive HTML
+---
+
+
+# Motivation
+
+Descriptive statistics are essential in official statistics.  
+However, they are often insufficient to understand **relationships** between variables.
+
+They are essential, but:
+  - They hide heterogeneity
+  - They cannot isolate multiple effects
+  - They may lead to misleading policy conclusions
+
+We illustrate this here in this reproducible example. 
+
+## Settings and libraries
+
+```{r setup, include=FALSE}
+# My default setting for this document
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	cache = FALSE,
+	comment = NA
+)
+```
+
+#### Install packages (*only once!*) and load them.
+
+```{r InstallPackages, include=FALSE}
+# List of the packages needed
+Mypackages <- c(
+   "data.table",  "RColorBrewer",
+  "GGally", "knitr", "papeR", "modelsummary", 
+  "sjPlot", "gt", "gtsummary", "tidyverse"  )
+
+# Install any packages that are not yet installed ;-)
+Newpackages <- setdiff(Mypackages, rownames(installed.packages()))
+install.packages(Newpackages)
+
+```
+
+####  Loading the packages needed for the analysis 
+
+```{r LoadPackages, include=FALSE}
+# Load the packages we need
+# tip: load tidyverse last to avoid issues with summarize!
+
+cat("Installing all packages" )
+for (pkg in Mypackages) {
+  library(pkg, character.only = TRUE)
+  cat("✓", pkg, "\n")
+}
+```
+
+### A word on packages 
+
+**Tidy data management packages**
+
+- tidyverse
+- data.table
+
+**Plotting packages**
+
+- RColorBrewer
+- GGally
+
+**Tables and sumary statistics** 
+
+- modelsummary
+- sjPlot
+- gt 
+- gtsummary
+
+**Nice presentation of results**
+
+- knitr
+- papeR
+
+
+One can also define some settings for the graphics and colors
+
+```{r setup_graphics, include=FALSE}
+# Setting the theme for graphics
+theme_set(theme_minimal() + theme(panel.grid = element_blank()))
+```
+
+
+```{r colors, echo = FALSE}
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# I will use my preferred colors for sex all along the document
+sex_colors <- c(
+  "Men" = "coral",       
+  "Women" = "#9B59B6"     
+)
+
+age_colors <- c(
+  "Young" = "#F39C12" ,
+  "Middle" = "#C0504D",
+  "Old" = "#8da0cb"
+)
+
+# Other colors
+Some_colors <-c(
+    "Young" = "#66c2a5",      # Soft blue
+    "Middle" = "#F39C12",     # Warm orange
+    "old" = "#C0504D"         # Muted burgundy/red
+)
+# Then: 
+ # - Points and lines (and any others)
+ #        scale_color_manual(values = sex_colors)
+ #  - Bar chart
+ #        scale_fill_manual(values = sex_colors)
+ 
+  
+```
+
+
+```{r seed, include=FALSE}
+# We'll see why this is important later
+set.seed(2512) # For reproducibility
+```
+
+# Data
+
+```{r dataloading}
+data <-read.csv("../data/Household.csv")
+```
+
+**Variables:**
+
+- **income**:  Household income (continuous)
+- **education**: Adjusted years of education of household head (continuous)
+- **age**: Age of household head (continuous)
+- **sex**: Sex of household head ("Man" or "Woman)
+- **education_level**: Level of education (3 levels)
+- **age_group**: Age classification ("Young" , "Middle", "Old")
+
+
+
+```{r cleaning, echo=FALSE}
+# Data  cleaning
+data <- data %>%
+  select(income, age,  education, sex, education_level) %>%
+  mutate(age_group = case_when( age <20 ~ "Young",
+                                age >= 20 & age < 40 ~"Middle", 
+                                age >=40 ~"Old"
+                                ), 
+         age_group = factor(age_group, levels = c("Young", "Middle", "Old")),
+         sex= as.factor(sex), 
+         education_level = as.factor(education_level)
+  )
+```
+
+
+> First one can have a look at the data set (raw data). Here we dislay the 6 first observations. 
+
+```{r head}
+head(data)
+```
+ 
+ > **Question**:   How many variables in the data set? 
+
+---
+
+# Analysis
+
+
+**Question:**  
+
+> What determines the `income` for households?
+
+---
+
+##  Descriptive statistics
+
+We have both continuous and categorical variables:
+
+```{r StatSummary}
+datasummary_skim(data, 
+                 type = "numeric", 
+                 title = "Continuous variables")
+```
+
+
+```{r StatSummaryC}
+datasummary_skim(data,
+                 type = "categorical",
+                 title = " Categorical (factors)")
+```
+
+### Stats by sex
+
+```{r StatGroup}
+data_by_sex <-data %>%
+  group_by(sex) %>%
+  summarise(
+    N = n(),
+    mean_income = round(mean(income), 1),
+    min_inc = round(min(income), 1),
+    max_inc = round(max(income), 1),
+    mean_educ = round(mean(education), 1),
+    mean_age = round(mean(age), 1),
+    .groups = "drop"
+  )
+
+kable(data_by_sex)
+```
+
+### Average income by sex
+
+```{r StatBySex}
+data_by_sex %>%
+  ggplot(aes(sex, mean_income, fill = sex)) +
+  geom_col(width = 0.2) +
+  scale_fill_manual(values = sex_colors) +
+  labs(
+    title = "Average income by sex",
+    subtitle = "NB: This is not a good graphic!",
+    y = "Mean income",
+    x = NULL
+  ) +
+  coord_flip()+
+  theme(legend.position = "none")
+
+
+```
+
+**Tempting interpretation:**  
+> Men earn more than women.
+
+
+### A better representation of that 
+```{r}
+ggplot(data, aes(x = sex, y = income, fill = sex)) +
+  # geom_boxplot(width = 0.3) +
+  geom_jitter(width = 0.2, alpha = 0.5, color = "grey70" ) +
+  scale_fill_manual(values = sex_colors) +
+  labs(
+    title = "Income by Sex",
+    subtitle = "Showing the variability",
+    x = NULL,
+    y = "Income"
+  ) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+
+
+## Scatter plot: income vs education
+
+```{r basic-scatterplot}
+data %>%
+ggplot() +
+  aes(education, income) +
+  geom_point(color = "lightblue", alpha = 0.8) +
+  labs(
+    title = "Scatter plot of Income vs education",
+    x = "Education (Adjusted years)",
+    y = "Income"
+  ) 
+```
+
+This suggests a positive relationship, but variability is large.
+
+##  Adding more information: Mutlivariate analysis
+
+Looking at 2x2 relationships
+
+## Income, and age
+
+```{r ScatterIncomeAge}
+ggplot(data, aes(age, income)) +
+  geom_point(alpha = 0.6, color = "darkgrey") +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Income and age",
+    x = "Age",
+    y = "Income",
+    color = "Age"
+  )
+```
+
+> The relationship is still hard to interpret clearly.
+
+### Income and Education , by age groups
+
+
+```{r ScatterIncomeEdu, warning=FALSE}
+ggplot(data, aes(education, income, color = age_group)) +
+  geom_point(alpha = 0.6, position = position_jitter(width = 0.3, height = 0)) +
+  facet_wrap(~ age_group) +
+ # scale_color_manual(values = age_colors) +
+  labs(
+    title = "Income and education",
+    subtitle = "Color is age group",
+    x = "Education (Adjusted years)",
+    y = "Income",
+    color = "Age"
+  ) +
+  theme(
+    panel.border = element_rect(color = "grey70", fill = NA, linewidth = 0.5),
+    # axis.line.y = element_line(color = "black"),
+    # axis.ticks.y = element_line(color = "black"),
+    panel.spacing.x = unit(2, "lines"),  # Horizontal spacing
+    panel.spacing.y = unit(1, "lines"),   # Vertical spacing (if wrapped)
+    legend.position = "bottom"
+)
+```
+
+## Can we plot all interactions? 
+
+```{r Scattermatrix}
+# Scatterplot matrix
+GGally::ggpairs(data, 
+        columns = c("income", "age", "education"),
+        aes(color = sex, alpha = 0.3),
+        title = "Distribution and relationships between Income, Age, and Education \n (by sex)",
+        switch = "both",   # labels bottom and left
+        upper = list(continuous = "cor"),      # Correlations in upper triangle
+        lower = list(continuous = "points"),   # Scatterplots in lower triangle
+        diag = list(continuous = "densityDiag")) + # Density plots on diagonal
+  scale_color_manual(values = sex_colors) +
+  scale_fill_manual(values = sex_colors)
+```
+
+
+
+# Limitations of descriptive statistics
+
+## Why this is still not enough?
+
+- Visual inspection is difficult sometimes
+- Effects are hard to quantify
+- Multiple variables are difficult to handle simultaneously, the number of interactions is important. 
+
+This motivates multivariate regression.
+
+# Regression model
+
+## A simple  Linear model
+
+Let's just assess the relation between $y$= income and  $X$ = Education
+
+```{r RegressionUni, echo=TRUE}
+modelUni <- lm(income ~ education, data = data)
+summary(modelUni)
+```
+
+```{r}
+tbl_regression(modelUni)
+
+```
+
+
+```{r }
+modelsummary(
+  modelUni,
+  statistic = "std.error",
+  stars = TRUE,
+  output = "html"
+)
+```
+
+## Interpretation
+
+- The intercept is estimated at **`r round(coef(modelUni)[1], 2)`**.
+- A one-unit increase in education is associated with an average increase of **`r round(coef(modelUni)[2], 2)`** units of income.
+
+## Model fit
+
+- R-squared: **`r round(summary(modelUni)$r.squared, 3)`**
+- Adjusted R-squared: **`r round(summary(modelUni)$adj.r.squared, 3)`**
+
+## Linear model with all variables
+
+```{r, echo=TRUE}
+modelMulti <- lm(income ~ education + age + sex , data = data)
+summary(modelMulti)
+```
+
+
+```{r}
+modelsummary(
+  modelMulti,
+  statistic = "std.error",
+  stars = TRUE,
+  output = "html"
+)
+```
+
+```{r}
+tab_model(
+  modelMulti,
+  title = "Regression of Income (Y)  on education, age and sex (Xs)",
+  show.se = TRUE,
+  show.p = TRUE,
+  dv.labels = "Income",
+  file = NULL
+)
+```
+
+
+This model:
+
+- Quantifies the effect of education
+- Controls for age and sex
+
+```{r regression_line}
+ggplot(data, aes(education, income)) +
+  geom_point(alpha = 0.4, color = SIAP.color) +
+  geom_smooth(method = "lm", se = FALSE, color = "grey") +
+  # geom_abline(intercept = 600, color = "darkred", linewidth = 1.5) +  # For illustation
+  labs(
+    title = "Income and education",
+    subtitle = "Regression line adjusted for age and sex",
+    x = "Education (Adjusted years)",
+    y = "Income"
+  ) 
+```
+
+```{r}
+# Create prediction grid from the fitted model
+pred_data <- expand.grid(
+  education = seq(min(data$education),
+                         max(data$education),
+                         length.out = 100),
+  sex = unique(data$sex),
+  age = mean(data$age)
+)
+
+pred_data$pred_income <- predict(modelMulti, newdata = pred_data)
+
+ggplot(data, aes(education, income, color = sex)) +
+  geom_point(alpha = 0.3) +
+  geom_line(
+    data = pred_data,
+    aes(education, pred_income, color = sex),
+    linewidth = 1 ) +
+  scale_color_manual(values = sex_colors)+
+  labs(
+    title = "Income and education by sex",
+    subtitle = "Same regression model, adjusted for age",
+    x = "Education (Adjusted years)",
+    y = "Income",
+    color = "Sex" ) +
+  theme_minimal()
+```
+
+
+# Key message
+
+## Take-away for official statistics
+
+- Descriptive statistics are indispensable
+- But they are not sufficient for policy analysis
+- Regression is a natural and necessary extension
+
+> **Descriptive statistics describe.  
+Regression explains.**
+
+---
+
+# Bonus: A note on *partial* analysis
+
+
+## Income–education relationship by sex
+If we do the analysis by sex (that is for women only vs for Men only), we have this: 
+
+```{r}
+ggplot(data, aes(education, income, color = sex)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_color_manual(values = sex_colors)+
+  labs(
+    title = "Income–education relationship by sex",
+    x = "Education (Adjusted years)",
+    y = "Income",
+    color = "Sex"
+  ) 
+```
+
+We now see:
+
+- Education increases income for both sexes
+- The effect is **stronger for young women** !!
+
+> But we are not comparing the exact same thing!
+
+We are not analysing the **whole population**, we are just doing **2 different analysis**, one for each sex, and therefore not comparing men and women fairly!   
+
+
+
