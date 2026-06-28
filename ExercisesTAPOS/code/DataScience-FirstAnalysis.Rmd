@@ -258,10 +258,29 @@ data_by_sex %>%
 > Men earn more than women.
 
 
-### A better representation of that 
+### A better representation of that:
+
+
 ```{r}
 ggplot(data, aes(x = sex, y = income, fill = sex)) +
-  # geom_boxplot(width = 0.3) +
+  geom_boxplot(width = 0.3) +
+  scale_fill_manual(values = sex_colors) +
+  labs(
+    title = "Income by Sex",
+    subtitle = "Boxplot of income by sex",
+    x = NULL,
+    y = "Income"
+  ) +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+
+
+```{r}
+ggplot(data, aes(x = sex, y = income, fill = sex)) +
+  geom_boxplot(width = 0.3) +
   geom_jitter(width = 0.2, alpha = 0.5, color = "grey70" ) +
   scale_fill_manual(values = sex_colors) +
   labs(
