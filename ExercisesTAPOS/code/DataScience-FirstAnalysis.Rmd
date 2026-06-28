@@ -374,6 +374,24 @@ GGally::ggpairs(data,
 ```
 
 
+## Let's try a Parallel Coordinate Plot
+
+```{r}
+library(GGally)
+data %>%
+  mutate(sexI = as.integer(sex)) %>%
+  ggparcoord(
+             columns     = c(7, 3, 1, 2),
+             groupColumn = "sex",
+             scale       = "uniminmax",
+             alphaLines  = 0.1,
+             mapping = ggplot2::aes(linewidth = 1.5, color = sex)) +
+    ggplot2::scale_linewidth_identity() +
+    scale_color_manual(values = sex_colors) +
+    theme_minimal()
+```
+
+
 
 # Limitations of descriptive statistics
 
