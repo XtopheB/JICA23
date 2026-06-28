@@ -5,10 +5,6 @@ author: "Christophe Bontemps"
 date:   "`r Sys.Date()`"
 output:
  
-  word_document:
-    # reference_docx: ../docs/KAZ-Template.docx
-    toc: no 
-    number_sections: true
   html_document: 
     df_print: paged
     always_allow_html: true
@@ -17,6 +13,10 @@ output:
     keep_md: no
     code_folding: show
     code_download: true
+  word_document:
+    # reference_docx: ../docs/KAZ-Template.docx
+    toc: no 
+    number_sections: true
   pdf_document:
     toc: yes
     df_print: kable
@@ -105,7 +105,9 @@ One can also define some settings for the graphics and colors
 
 ```{r setup_graphics, include=FALSE}
 # Setting the theme for graphics
-theme_set(theme_minimal() + theme(panel.grid = element_blank()))
+theme_set(theme_minimal() +
+          theme(panel.grid = element_blank())
+          )
 ```
 
 
@@ -300,7 +302,7 @@ Looking at 2x2 relationships
 ```{r ScatterIncomeAge}
 ggplot(data, aes(age, income)) +
   geom_point(alpha = 0.6, color = "darkgrey") +
-  geom_smooth(method = "lm", se = FALSE) +
+ # geom_smooth(method = "lm", se = FALSE) +
   labs(
     title = "Income and age",
     x = "Age",
