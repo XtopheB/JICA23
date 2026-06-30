@@ -5,6 +5,10 @@ author: "Christophe Bontemps"
 date:   "`r Sys.Date()`"
 output:
  
+  word_document:
+    #reference_docx: ../docs/KAZ-Template.docx
+    toc: no 
+    number_sections: true
   html_document: 
     df_print: paged
     always_allow_html: true
@@ -13,10 +17,6 @@ output:
     keep_md: no
     code_folding: show
     code_download: true
-  word_document:
-    # reference_docx: ../docs/KAZ-Template.docx
-    toc: no 
-    number_sections: true
   pdf_document:
     toc: yes
     df_print: kable
@@ -170,8 +170,8 @@ data <-read.csv("../data/Household.csv")
 # Data  cleaning
 data <- data %>%
   select(income, age,  education, sex, education_level) %>%
-  mutate(age_group = case_when( age <20 ~ "Young",
-                                age >= 20 & age < 40 ~"Middle", 
+  mutate(age_group = case_when( age <30 ~ "Young",
+                                age >= 30 & age < 40 ~"Middle", 
                                 age >=40 ~"Old"
                                 ), 
          age_group = factor(age_group, levels = c("Young", "Middle", "Old")),
@@ -253,6 +253,23 @@ data_by_sex %>%
 
 
 ```
+
+```{r}
+ggplot(data) +
+  aes(x = education, y = income, colour = sex) +
+  geom_point() +
+  scale_color_hue(direction = 1) +
+  labs(
+    title = "My nice graphic",
+    subtitle = "bla ",
+    caption = "done in class"
+  ) +
+  theme_minimal() +
+ facet_wrap(vars(sex))
+
+```
+
+
 
 **Tempting interpretation:**  
 > Men earn more than women.
@@ -446,6 +463,12 @@ modelMulti <- lm(income ~ education + age + sex , data = data)
 summary(modelMulti)
 ```
 
+
+
+```{r, echo=TRUE}
+modelMulti2 <- lm(income ~ education + sex +age_group , data = data)
+summary(modelMulti2)
+```
 
 ```{r}
 modelsummary(
