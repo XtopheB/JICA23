@@ -1,10 +1,7 @@
 ---
 title: "International Merchandise Trade Statistics hands-on exercise"
 subtitle: '*A simple report*'
-author: |
-   | Chesca Rosales and Christophe Bontemps,
-   | *Statistical Institute for Asia and the Pacific*
-   |
+author: "Your name"
 date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
   pdf_document:
@@ -21,7 +18,11 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE, eval = FALSE) 
+knitr::opts_chunk$set( message = FALSE,
+                       warning = FALSE,
+                       results =TRUE,
+                       echo = TRUE,
+                       eval = FALSE) 
 
 ```
 
@@ -71,7 +72,8 @@ for (pkg in Mypackages) {
 
 
 ```{r Importdata }
-Comtradedata <- read.delim('', header=)
+# Loading the data
+Comtradedata <- read.delim("   ", header=)
 
 ```
 
@@ -90,6 +92,8 @@ The original data set loaded has **683464** observations and  **34** variables.
 *One option is to use `filter()` function.*
 
 ```{r tradedata}
+# Creating a bespoke dataset with only relevant variables
+
 tradedata <- Comtradedata %>%
   filter(nchar(cmdCode)> ... &
            motCode ==  ...  & 
