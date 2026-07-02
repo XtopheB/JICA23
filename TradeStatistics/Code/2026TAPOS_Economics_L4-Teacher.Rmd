@@ -1,8 +1,11 @@
 ---
 title: " International Merchandise Trade Statistics hands-on exercise"
-author: "Chesca Rosales, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
-subtitle: '*A simple report*'
-date: "`r Sys.Date()`"
+subtitle: "*Teachers'sreport*"
+author: |
+   | Chesca Rosales and Christophe Bontemps,
+   | *Statistical Institute for Asia and the Pacific*
+   |
+date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
   pdf_document:
     toc: yes
