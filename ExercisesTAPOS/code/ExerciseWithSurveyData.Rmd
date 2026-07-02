@@ -1,6 +1,6 @@
 ---
 title: "Exercises with Survey data"
-author: "Christophe Bontemps (SIAP)"
+author: "Your Name"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
@@ -37,11 +37,13 @@ options(scipen = 999)
 
 
 # Overview
-This document contains both the instructions and *some* code to help practice your data analytics skills.  We'll provide hints as well! 
-The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. Consider this as a self-paced guided tour ;-).
+This document contains both the instructions and *some* code to help practice your data analytics skills. It is aligned with what we have see during the lectures and, don't worry, I'll provide hints as well ;-). 
+The goal is to work with some basic elements needed when using survey data and computing specific variables and indicators. 
 
 ## Instructions: 
-Follow the steps, and **answer directly in the Rmd document!**
+Follow the steps, and **answer directly in the Rmd document!**.  One completed, you should be able to `knit` the document and send me and html file. 
+
+> *This exercise should not take you more than one hour*
 
 
 # Let's start!
@@ -65,13 +67,19 @@ library(modelsummary)
 
 
 ## Prerequisite: 
-* Check that you have a folder structure, with directories named `code`, `data`, `output` (and other if you want). The data set *Household_Survey.csv*  must be in the `data` folder, while the file *ExerciseWithSurveyData.Rmd*  should be in the `code` folder. 
+Check that you have a folder structure, with directories named: 
+
+- `code`,
+- `data`,
+- `output` (and other if you want).
+
+> The data set *Household2026.csv*  **must be** in the `data` folder, while the file *ExerciseWithSurveyData.Rmd*  should be in the `code` folder. 
 
 * Open the file *ExerciseWithSurveyData.Rmd* with RStudio 
 * Change the author with your name (*hint: be careful of  keeping  " "* )
 
 
-> All along this exercise, you must answer all questions in the .Rmd document in RStudio only 
+> **All along this exercise, you must answer all questions in the .Rmd document in RStudio only** 
 
 
 # Working with Survey data 
@@ -79,8 +87,11 @@ library(modelsummary)
 ###  First, load the data
 The data are survey-type data. The file is a csv file named `Household2026.csv` in the folder `data`. Use the function `read.csv()` to load the data. 
 
+
+
 ```{r }
-household_survey <- read.csv("../data/Household2026.csv")
+# fill the blanks
+household_survey <- read.csv(" ..... ")
 ```
 
 Now we have a data set, you can view it (use the  top-right panel or `summary()`). 
@@ -93,7 +104,7 @@ Now we have a data set, you can view it (use the  top-right panel or `summary()`
 - How many observations (households) has this file? 
 - How many variables? 
 
-*(hint: you can use the function `nrow()`)*
+*(hint: you can use the functions `nrow()` or `ncol()`)*
 
 **Your answer:**
 
@@ -165,7 +176,7 @@ avg_income_rural <- total_rural$total / Nb_rural
 
 ```
 
-So, the average income for **rural** population  is **`r round(avg_income_rural, 1)`**. 
+
 
 ## Exercise 4:
 
@@ -173,6 +184,13 @@ Replicate this exercise  for the *Urban* population. Name the result *avg_income
 
 - Which one is greater?
 
+
+```{r}
+# Write your code here
+
+```
+
+ 
 
  
 **Your answer:**
@@ -186,12 +204,12 @@ Replicate this exercise  for the *Urban* population. Name the result *avg_income
 
 ## Exercise 5:
 
-After examining the data frame  *household_survey* 
--Identify the variable that represents the weight of each household. 
+After examining the data frame  *household_survey* , identify the variable that represents the weights for each household. 
+
 
 **Hint:** This variable is numerical, with values between 0 and 1.
 
-- provide some summary statistics of this variable (you can  use the function `summary()`)  
+> Provide some summary statistics of this variable (you can  use the function `summary()`)  
 
 
 
@@ -216,14 +234,14 @@ We need to change our way to compute the sums in our previous computation
  
 ## Exercise 6: 
 
-Create a new variable *total_weighted_rural* in the data.frame *household_rural*  that will multiply the income of each household with its weight. 
+Within the data.frame *household_rural* , create a new variable *total_weighted_rural*  that will multiply the income of each household with its weight. 
 
 **Hint:** you can use the `%>%` operator and the `mutate()` function to create a new variable.
 
 **Your answer:**  
 
 
-
+## Exercise 7:  
 
 Below is the code that computes the weighted average income for the rural population. Please check the difference and how we have modified the 3 steps from previous average computation. 
 
@@ -246,7 +264,7 @@ avg_income_rural_w <- total_rural_w$total_w / Nb_rural_w
 print(avg_income_rural_w)
 
 ```
-## Exercise 7:  
+  
 
 Compare the weighted average income (*avg_weighted_rural* ) with the simple average for the **rural** population. Which one is greater?    
 
