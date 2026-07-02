@@ -1,26 +1,27 @@
 ---
 title: "International Merchandise Trade Statistics hands-on exercise"
-author: "Chesca Rosales and Christophe Bontemps, Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
-date: "`r Sys.Date()`"
-
+author: |
+   | Chesca Rosales and Christophe Bontemps,
+   | *Statistical Institute for Asia and the Pacific*
+   |
+date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  word_document:
-    toc: no
-  pdf_document:
-    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
-
 ---
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE) 
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =TRUE, echo = TRUE, eval = FALSE) 
 
 ```
 
@@ -74,7 +75,7 @@ Comtradedata <- read.delim('', header=)
 
 ```
 
-The original data set loaded has **`r nrow(Comtradedata)`** observations and  **`r ncol(Comtradedata)`** variables. 
+The original data set loaded has **683464** observations and  **34** variables. 
 
 
 # Step 3: Remove duplicates.
@@ -90,15 +91,15 @@ The original data set loaded has **`r nrow(Comtradedata)`** observations and  **
 
 ```{r tradedata}
 tradedata <- Comtradedata %>%
-  filter(nchar(cmdCode)> &
-           motCode== &
+  filter(nchar(cmdCode)> ... &
+           motCode ==  ...  & 
            !flowCode %in% c(" "," ") &
            partnerCode!= ) %>%
   select( )
 
 ```
 
-The new data set created has now **`r nrow(tradedata)`** observations and only **`r ncol(tradedata)`** variables
+The new data set created has now **170441** observations and only **8** variables
 
 
 # Step 4: Add country and product descriptions.
@@ -157,7 +158,7 @@ tradedata <-
 
 The file trade data has now the following variables: 
 
-- *`r names(tradedata)`*.
+*reporterCode, flowCode, partnerCode, cmdCode, motCode, CIFValue, FOBValue, primaryValue, geoAreaDescription, regional grouping.*
 
 
 ## Step 4c: Merge product code with product label
@@ -184,13 +185,14 @@ tradedata <- tradedata %>%
   
 ```{r AlternativeCodeforTrade}
 
-
-
-
-
-
-
-
+# Alternative similar to Excel
+# tradedata <- tradedata %>%
+#   mutate(cmdCodeDescription =
+#            lookup(tradedata$cmdCode,
+#                   productlabel$cmdCode,
+#                   productlabel$cmdCodeDescription)) %>%
+#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import")
+#          )
 
 ```
 
@@ -212,8 +214,10 @@ table1 <- tradedata %>%
   summarise( , na.rm= ))
 
 #Printing the table
-kableExtra::kable(table1, caption = "Exports and imports by country", 
-                  digit=3, format.args = list(big.mark = ",") ) %>%
+kableExtra::kable(table1,
+                  caption = "Exports and imports by country", 
+                  digit=3,
+                  format.args = list(big.mark = ",") ) %>%
   kable_classic(full_width = F, html_font = "Arial")
 
 ```
@@ -222,11 +226,16 @@ kableExtra::kable(table1, caption = "Exports and imports by country",
 *Remember to divide primaryValue by 1000000.*
 
 ```{r AlternativeTableTotalTrade}
+## Alternative similar to Excel
+## Uncomment to run if you prefer..
 
-
-
-
-
+# tradedata <- tradedata %>%
+#   mutate(cmdCodeDescription = 
+#            lookup(tradedata$cmdCode,
+#                   productlabel$cmdCode,
+#                   productlabel$cmdCodeDescription)) %>%
+#   mutate(flowCode2 = ifelse(tradedata$flowCode=="X", "Export", "Import")
+#          )
 
 
 
@@ -235,7 +244,7 @@ kableExtra::kable(table1, caption = "Exports and imports by country",
 
 # Step 6: Create a  table of trade flows by partner country, in million US dollars.
 
-*Group data by partner country (geoAreaDescription) and trade flow (flowCode2). And then, sum up the trade value (primaryValue) within each group.*
+*Group data by partner country (`geoAreaDescription`) and trade flow (`flowCode2`). And then, sum up the trade value (`primaryValue`) within each group.*
 
 *Hints: There are a couple of approaches to generate this table. One option is to use a pipeline to group_by and summarize table by getting the sum of the primary value. *
 
@@ -249,7 +258,7 @@ kableExtra::kable(table1, caption = "Exports and imports by country",
 # Computing the values by country using group_by
 table2 <- tradedata %>% 
   group_by( ) %>% 
-  summarise( , na.rm= ),
+  summarise( , na.rm = TRUE ),
             .groups = "drop")
 
 # Restructuring the table into wide format
@@ -274,17 +283,19 @@ kableExtra::kable(table2, caption = "Exports and imports by country",
 *Remember to divide primaryValue by 1000000.*
 
 ```{r AlternativeTableValuesByCountry}
+## Uncomment to run if you prefer..
 
-
-
-
-
-
-
-
-
-
-
+# table2a <- xtabs(primaryValue~geoAreaDescription + flowCode2, tradedata)/1000000
+# 
+# table2a <- data.frame(table2a)
+# colnames(table2a) <- c("Area", "flowCode2", "Value")
+# 
+# table2a <- pivot_wider(table2a, names_from="flowCode2", values_from="Value") %>%
+#   filter(Export>=1000) %>%
+#   as.data.frame() %>% arrange(desc(Export))
+# # 
+# # kableExtra::kable(table2a, digit=3, format.args = list(big.mark = ",")) %>%
+#   kable_classic(full_width = F, html_font = "Arial")
 
 
 ```
@@ -308,17 +319,20 @@ tradedata <- tradedata %>%
 # Joining Tradedata and Codedescription
 
 tradedata <- tradedata %>%
+  left_join(
   
   ) %>%
-  rename(cmd2CodeDescription = cmdCodeDescription.y)  ## <- need to explain this....
+  rename(cmd2CodeDescription = cmdCodeDescription.y)  ## <-I will explain this....
 ```
 
 *An alternative way to add the 2-digit commodity code description (cmd2Code) is by looking up the value in cmd2Code column, matching it with the commodity code column in the productlabel dataframe (productlabel\$cmdCode) and retrieving the corresponding commodity code description in the productlabel dataframe (productlabel\$cmdCodeDescription).*
 
 ```{r AlternativeJoin2digits}
+## Alternative
+## uncomment if you prefer
 
-
-
+# tradedata<- tradedata %>% 
+#   mutate(cmd2CodeDescription = lookup(tradedata$cmd2Code, productlabel$cmdCode, productlabel$cmdCodeDescription)) 
 
 ```
 
@@ -353,15 +367,17 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 *Remember to divide primaryValue by 1000000.*
 
 ```{r AlternativeTableValuebyProduct}
+## Alternative
 
-
-
-
-
-
-
-
-
+# table3a <- xtabs(primaryValue~cmd2CodeDescription+flowCode2, tradedata)/1000000
+# table3a <- data.frame(table3a)
+# colnames(table3a) <- c("Product", "flowCode2", "Value")
+# #table3$Product <- substr(table3$Product, 1, 50)
+# 
+# table3a <- pivot_wider(table3a, names_from="flowCode2", values_from="Value") %>%   slice_max(n=20, order_by=Export)
+# 
+# kableExtra::kable(table3a, digit=3, format.args = list(big.mark = ",")) %>%
+#   kable_classic(full_width = F, html_font = "Arial")
 
 
 ```
@@ -382,7 +398,7 @@ kableExtra::kable(table3, caption = "Exports and imports by product (2-digit)",
 4. *Add a theme to the plot. The bar chart can be dark, minimal, classic, grey, black and white (bw), etc. For instance, theme_minimal(), theme_bw(), etc.*
 
 ```{r BarGlobal}
-ggplot( , aes(x= , y=  )) +
+ggplot( , aes(x = , y =  )) +
   geom_col(fill = "steelblue") +
   labs(title = "Total trade flows of Indonesia in 2023, in million US dollars",
        x = "Category", y = "Values") +
