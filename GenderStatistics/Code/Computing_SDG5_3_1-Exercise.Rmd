@@ -7,13 +7,13 @@ author: |
    |
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  pdf_document:
-    toc: yes
   word_document:
     toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
@@ -26,13 +26,12 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
                        results =TRUE,
-                       eval =  FALSE, 
-                       echo = knitr::is_html_output() # Code only in html!
+                       eval =  FALSE
                        )
 
 ```
 
-```{r Country, eval = TRUE}
+```{r Country, eval=TRUE, include=FALSE}
 # Since we may want to use other data set from other countries/years
 # Let us define the Country and year as a parameter
 MyCountry <- "Lao"
@@ -89,7 +88,7 @@ The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`
 ```{r import}
 #Create a data frame called df which stores the MICS data
 # This data set will change for a different Country
-rawdf <- read_spss("../Data/wm.sav")
+rawdf <- read_spss(...)
 ```
 
 The raw data set has **22512 ** observations and  **476** variables. 
@@ -111,21 +110,16 @@ Although the dataset contains many variables, we only need a few for this comput
 
 
 ##  Variable selection
- > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
+ > Let us select the variable of interest in a new, smaller data set with only the variables of interest, that is "WM17", "WB4", "WAGEM", "HH6",and "wmweight".
+ 
  
 ```{r subset}
 df <- rawdf %>%
-  select(WM17, WB4, WAGEM,HH6, wmweight)
+  select()
 
 ```
 
 We have now a new data set  `df` with still **22512 ** observations   but only  **5** variables! Let us use some fancy package to get an overview of the values of these 5 variables: 
-
--WM17,
--WB4, 
--WAGEM, 
--HH6, 
--wmweight.
 
 
  
@@ -151,9 +145,7 @@ df <- df %>%
                        levels = c(1,2,3),
                        labels = c("Urban", "Rural", "Unknown")
                        )
-  )
-        
-
+         )
 ```
 
 
@@ -220,6 +212,7 @@ df %>%
 
 ## Summary Statistics
 
+
 ```{r summaryAge}
 # Age is the variable WB4
 
@@ -259,7 +252,10 @@ ggplot() +
 Sampling weights are used to produce representative estimates at the national level.
 
 ```{r}
-summary(df$wmweight)
+
+df %>%
+  select(wmweight) %>%
+  summary()
 ```
 
 ## Distribution of Sampling Weights
@@ -280,7 +276,9 @@ ggplot(df, aes(x = wmweight)) +
 # 9. Explore Age at First Marriage
 
 ```{r}
-summary(df$WAGEM)
+df %>%
+  select(WAGEM) %>%
+  summary()
 ```
 
 ## Histogram of Age at First Marriage
@@ -311,13 +309,15 @@ ggplot(df, aes(x = WAGEM)) +
 
 SDG 5.3.1 is calculated for women aged **20–24 years** who completed the interview. We create a new data set `wm_20_24` with only the population in the definition.  
 
+
+
 ```{r subset20_24}
 wm_20_24 <- df %>%
-  filter(
-    WM17 == 1,
-    WB4 >= 20,
-    WB4 < 25
-  )
+ ...,
+ .... ,
+  
+  
+  
 ```
 
 We can compute the number of women included in the analysis, now only **3317** women.
@@ -343,14 +343,13 @@ $$
 {\text{Total "weighted nb" women aged 20–24}}
 \times 100
 $$
-The result can be summarized in this table:
+The result can be summarized in this table, where we compute the numerator, the denominator and the ratio (multiplied by 1000):
+
 ```{r SDG_5_3_1}
 sdg_5_3_1 <- wm_20_24 %>%
   summarise(
-    indicator = "SDG 5.3.1",
-    denominator = sum(wmweight, na.rm = TRUE),
-    numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
-    SDG_5_3_1    = 100 * numerator / denominator
+    
+    
   ) 
  
 # Making a nice table
@@ -365,12 +364,12 @@ Indicators are often disaggregated to study inequalities between groups.
 
 Here we calculate SDG 5.3.1 separately for urban and rural areas. This is done exactly with the same code, but using the feature of  `group_by()` to get one result *by* category. 
 
-*hint*: We removed the area of residence which are *"unknown"*.
+*hint*: We removed (filter out) any observation where the area of residence is *"unknown"*.
 
 ```{r}
 sdg_5_3_1_location <- wm_20_24 %>%
   filter(HH6 != "Unknown") %>%
-  group_by(HH6) %>%
+  group_by( .... ) %>%
   summarise(
     denominator = sum(wmweight, na.rm = TRUE),
     numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
@@ -443,28 +442,5 @@ The workflow included:
 The same general approach can be adapted to many other SDG indicators derived from survey data.
 
 
-```{r outputreport, eval=FALSE, include=FALSE}
-# Compiling manually to have the report produced in another directory
-# The name of the output file depends on "Country" and "year"
-# IMPORTANT:  This chunk needs to be manually computed when the report is ready
 
-# The name of the Country may have blanks, and comma, so let's change that: 
- CountryName <-  MyCountry %>%
-   str_remove_all(",") %>%
-  str_remove_all(" ")
-
-rmarkdown::render(
-  "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",CountryName,"-", DataYear,".html"),
-  output_dir = "../Reports"
-)
-
-# Word version
-rmarkdown::render(
-  "Computing_SDG5_3_1.Rmd",
-  output_file = paste0("SDG_5_3_1_report_",CountryName,"-", DataYear,".docx"),
-  output_dir = "../Reports"
-)
-
-```
 
