@@ -26,12 +26,13 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
                        results =TRUE,
+                       eval =  FALSE, 
                        echo = knitr::is_html_output() # Code only in html!
                        )
 
 ```
 
-```{r Country}
+```{r Country, eval = TRUE}
 # Since we may want to use other data set from other countries/years
 # Let us define the Country and year as a parameter
 MyCountry <- "Lao"
@@ -91,7 +92,7 @@ The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`
 rawdf <- read_spss("../Data/wm.sav")
 ```
 
-The raw data set has **`r nrow(rawdf)`** observations and  **`r ncol(rawdf)`** variables. 
+The raw data set has **22512 ** observations and  **476** variables. 
 
 # 3. Explore the Dataset
 
@@ -118,7 +119,15 @@ df <- rawdf %>%
 
 ```
 
-We have now a new data set  `df` with still **`r nrow(df)`** observations but only  **`r ncol(df)`** variables! Let us use some fancy package to get an overview of the values of these `r ncol(df)` variables: *`r names(df)`*.  
+We have now a new data set  `df` with still **22512 ** observations   but only  **5** variables! Let us use some fancy package to get an overview of the values of these 5 variables: 
+
+-WM17,
+-WB4, 
+-WAGEM, 
+-HH6, 
+-wmweight.
+
+
  
 ```{r Summary }
 # We can use the package modelsummary for a nice descriptive table  
@@ -163,9 +172,7 @@ df %>%
 head(df)
 ```
 
-## List Variable Names
 
-We have here `r ncol(df)` variables: *`r names(df)`*
 
 # 6. Explore Interview Status
 
@@ -313,7 +320,7 @@ wm_20_24 <- df %>%
   )
 ```
 
-We can compute the number of women included in the analysis, now only `r nrow(wm_20_24)` women.
+We can compute the number of women included in the analysis, now only **3317** women.
 
 
 
