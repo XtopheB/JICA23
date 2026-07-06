@@ -1,21 +1,18 @@
 ---
-title: " International Merchandise Trade Statistics hands-on exercise"
-subtitle: "*Teachers's report*"
-author: |
-   | Chesca Rosales and Christophe Bontemps,
-   | *Statistical Institute for Asia and the Pacific*
-   |
+title: " International Merchandise Trade Statistics"
+subtitle: "*Solution form the hands-on excecise*"
+author: "Your Name"
 date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
-  pdf_document:
-    toc: yes
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
+  pdf_document:
+    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML
 ---
 
@@ -501,7 +498,7 @@ table4 <- table4 %>%
   mutate(source = ifelse(table4$flowCode2=="Export", "Indonesia", as.character(table4$Area))) %>% 
   mutate(target = ifelse(table4$flowCode2=="Import", "Indonesia", as.character(table4$Area))) %>% 
   select("source", "target", "Value")
-  
+
 # We need a specific format for creating a Sankey diagram
 table4 <- table4 %>%
   mutate(
@@ -512,7 +509,6 @@ table4 <- table4 %>%
     target = if_else(target == "X_Indonesia", "Indonesia", target)
   )
 
-
 # create nodes data by determining all unique nodes found in your data
 node_names <- unique(c(as.character(table4$source), as.character(table4$target)))
 nodes <- data.frame(name = node_names)
@@ -522,7 +518,7 @@ links <- data.frame(source = match(table4$source, node_names) - 1,
                     target = match(table4$target, node_names) - 1,
                     value = table4$Value)
 
-
+# SankeyNetwork is a function from package networkD3 
 sn <- sankeyNetwork(Links = links, Nodes = nodes, Source = "source", 
                     Target = "target", Value = "value", NodeID = "name",
                     sinksRight = FALSE, nodeWidth = 30, 
