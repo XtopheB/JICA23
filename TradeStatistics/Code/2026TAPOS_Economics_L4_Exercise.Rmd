@@ -41,7 +41,7 @@ Download the latest trade data of **Indonesia** from the **Bulk file** in UN Com
 Mypackages <- c(
   "R.utils","readxl","dplyr", "tidyverse", 
   "lookup", "stringr","networkD3", "kableExtra",
-  "ggplot2","scales" )
+  "ggplot2","scales", "writexl" )
 
 # Install any packages that are not yet installed
 Newpackages <- setdiff(Mypackages, rownames(installed.packages()))
@@ -140,7 +140,9 @@ countrylabel <- countrylabel %>%
 
 ```{r labels}
 # Importing Labels
-productlabel <- readxl::read_excel("../Data/...xlsx", sheet = " ", range = cell_cols(" ")) 
+productlabel <- readxl::read_excel("../Data/...xlsx",
+                        sheet = " ",
+                        range = cell_cols(" ")) 
 
 colnames(productlabel) <- c( )
 
@@ -511,10 +513,16 @@ table4 <- table4 %>%
   mutate(target = ifelse(table4$flowCode2=="Import", "Indonesia", as.character(table4$Area))) %>% 
   select("source", "target", "Value")
   
-table4$source = paste0('M_', table4$source)
-table4$target = paste0('X_', table4$target)
-table4$source[table4$source == "M_Indonesia"] <- "Indonesia"
-table4$target[table4$target == "X_Indonesia"] <- "Indonesia"
+# We need a specific format for creating a Sankey diagram
+table4 <- table4 %>%
+  mutate(
+    source = paste0("M_", source),
+    target = paste0("X_", target),
+    # Indonesia being the country of interest, it is neither export or import
+    source = if_else(source == "M_Indonesia", "Indonesia", source),
+    target = if_else(target == "X_Indonesia", "Indonesia", target)
+  )
+
 
 # create nodes data by determining all unique nodes found in your data
 node_names <- unique(c(as.character(table4$source), as.character(table4$target)))
