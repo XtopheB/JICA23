@@ -1,7 +1,10 @@
 ---
 title: "Computing SDG 4.2.2 using MICS Data in R"
-author: "Sinovia Moonie  <br> Statistician/Lecturer, Statistical Institute for Asia and the Pacific"
 subtitle: '*A simple report*'
+author: |
+   | Sinovia Moonie and Christophe Bontemps,
+   | *Statistical Institute for Asia and the Pacific*
+   |
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -54,7 +57,7 @@ For **`r MyCountry`**, the reference cohort is children who were **`r RefAge`** 
 
 The tutorial follows a workflow for computing this indicator:
 
- INSERT WOKFLOW HERE
+![](../Documentation/Flowchart-422.png)
 
 
 # 1: Install the appropriate R packages 

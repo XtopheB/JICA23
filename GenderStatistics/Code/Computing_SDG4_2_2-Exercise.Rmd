@@ -1,0 +1,385 @@
+---
+title: "Computing SDG 4.2.2 using MICS Data in R"
+subtitle: '*A simple report*'
+author: "Your name"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
+  html_document:
+    toc: yes
+    toc_float: true
+    code_folding: hide
+    code_download: true
+always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
+---
+
+```{r setup, include=FALSE}
+# We define the options for the chunks globaly here
+
+knitr::opts_chunk$set( message = FALSE,
+                       warning = FALSE,
+                       results = TRUE,
+                       eval = FALSE
+                       )
+
+```
+
+```{r Country, eval = TRUE, include = FALSE}
+# Since we may want to use other data set from other countries/years
+# Let us define the Country and year as a parameter
+MyCountry <- "Lao"
+DataYear <- 2023
+# Years taken into account for the definition of the indicator
+RefYear <-  DataYear -1 # The last school year recorded
+RefAge <- 5
+
+```
+
+---
+
+# Introduction
+This tutorial demonstrates how to compute the **SDG Indicator 4.2.2: percentage of children in organized learning** (one year before the official primary entry age),  using microdata from the **Multiple Indicator Cluster Survey (MICS)** for `r MyCountry`  (`r DataYear`).
+
+
+The definition of **organised learning** is the following: 
+
+> An organized learning programme is one that consists of a coherent set or sequence of educational activities designed to achieve pre-determined learning outcomes or the accomplishment of a specific set of educational tasks.  E.g.  early childhood education prgogramme
+
+
+
+For **`r MyCountry`**, the reference cohort is children who were **`r RefAge`** years old in September **`r RefYear`**, meaning they were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**. The data source is the Multiple Indicator Cluster Survey (MICS) household roster (`hl.sav`).
+
+The tutorial follows a workflow for computing this indicator:
+
+![](../Documentation/Flowchart-422.png)
+
+
+# 1: Install the appropriate R packages 
+
+We use here a package manager `pacman` (another package). Once installed and loaded, it can facilitate the use of a list of packages
+
+```{r packages}
+# We use pacman here 
+# install.packages("pacman")  # <-- Run only once
+
+library(pacman)
+pacman::p_load(
+  haven,
+  tidyverse,
+  kableExtra, 
+  modelsummary
+)
+```
+
+
+# 2. Import the Data
+
+The full questionnaire dataset (`hl.sav`) is imported into R using `read_sav()`.
+
+```{r load-data}
+rawdf <- read_sav("../Data/hl.sav")
+```
+
+
+The raw dataset contains **91655** observations across **90** variables, covering all household members recorded in the survey.
+
+
+
+# 3. Explore the Dataset
+
+The indicator is constructed from a small set of variables
+
+## Key Variables Used
+
+| Variable    | Description                                          |
+|-------------|------------------------------------------------------|
+| `HL4`       | Sex of household member (1 = Male, 2 = Female)       |
+| `HL5M`      | Date of birth — month                                |
+| `HL5Y`      | Date of birth — year                                 |
+| `HL6`       | Age of household member                              |
+| `ED4`       | Ever attended school or ECE                          |
+| `ED9`       | Attended school or ECE in current year (2022–2023)   |
+| `ED10A`     | Level of education in current year (ECE = 0)         |
+| `HH6`       | Location or Area (rural , Urban)                     |
+| `windex5`   |  Wealth quintile                                     |
+| `hhweight`  | Household sample weight                              |
+
+
+
+##  Variable selection
+ > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
+ 
+
+```{r select-vars}
+df <- rawdf %>%
+  select( HL4, HL5M, HL5Y, HL6, ED4, ED9, ED10A, HH6, windex5, hhweight)
+
+
+```
+
+We have now a new data set  `df` with still **91655** observations but only  **10** variables! Let us use some fancy package to get an overview of the values of these variables.  
+ 
+```{r Summary_all }
+# We can use the package modelsummary for a nice descriptive table  
+datasummary_skim(df , type = "numeric" )
+```
+
+
+After selection, the working dataset has **91655 rows** and **10 columns**.
+
+> Some variables ar not numbers (`numeric`) but categories (`factor`), We should adjust their types to avoid issues in the computation.
+
+
+```{r redefine-type}
+# We use as_factor to transform variables with their right type
+
+df <- df %>%
+  mutate(HL4 = as_factor(HL4), 
+         HH6 = as_factor(HH6))
+```
+
+
+```{r Summary_factor }
+# We can use the package modelsummary for a nice descriptive table  
+datasummary_skim(df ,type = "categorical" )
+```
+
+---
+
+# 4. Compute SDG 4.2.2 
+
+## Define the Target Cohort
+There are several step for computing the population of interest:
+
+ - First, we exclude records with missing or invalid birth-month codes ( variable `HLM5` is   98, 99) 
+ - Second, children who were **`r RefAge`** years old in September **`r RefYear `** were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**.
+
+> We need to identify the variables that give us that information 
+
+| Variable    | Description                                          |
+|-------------|------------------------------------------------------|
+| `HL5M`      | Date of birth — month                                |
+| `HL5Y`      | Date of birth — year                                 |
+
+
+Now, we can define the target population. 
+```{r Target, eval=TRUE}
+# let's define the schooling period for this Country/year
+
+Year_Start <-(RefYear-RefAge)-1 
+Year_End <- RefYear-RefAge
+```
+
+
+```{r cohort-filter}
+# Filter the observations to define the target population
+Pop_Children <- df %>%
+  filter(     
+    # Remove missing/invalid birth dates
+    !is.na(HL5Y),
+    !is.na(HL5M),
+    !(HL5M %in% c(98, 99))
+    ) %>%
+  filter(    
+    # Selecting the target cohort
+    (HL5Y == Year_Start & HL5M >= 10) |
+      (HL5Y == Year_End & HL5M <= 9)
+  )
+```
+
+
+The cohort filter yields **2007** children as the **target population** born in the reference window.
+
+## Define children in organized learning
+
+A child is counted as participating in **organised learning** if either they attended school  (`ED9` = 1) or are at the ECE or Grade 1 level ( `ED10A` = 0 or 1 ) for the **current schooling period** (`r Year_Start` - `r Year_End` ). 
+
+```{r Population}
+Pop_Children <- Pop_Children %>%
+    # Attending ECE or Grade 1 in current school year 
+     mutate(
+    organized_learning = ifelse(ED9 == 1 & ED10A %in% c(0, 1), TRUE, FALSE)
+  )
+```
+
+```{r InLearning-count}
+Nb_InLearning <-  sum(Pop_Children$organized_learning, na.rm = TRUE)
+
+```
+
+
+**Exercise:** Replace XXX and YYYY below withR code to have an automatioc count of the  values XXXX and YYYY. One may use `R code` in the text for that. 
+> There are **XXXX** children in organized learning within **YYYY**  in the target cohort population. 
+
+
+
+## National Estimate
+
+The indicator is computed as a weighted proportion. Weights reflect the survey design and use the variable `hhweight`.
+
+```{r national-estimate}
+sdg_4_2_2 <- Pop_Children %>%
+  summarise(
+    Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2   = 100 * Numerator / Denominator
+  )
+
+# print(sdg_4_2_2)
+```
+
+> For  `r MyCountry`, the **National SDG 4.2.2 estimate is 66.5** of `r RefAge`-year-old children  in organised learning, for the period `r RefYear` - `r DataYear`.
+
+
+# 5. Disaggregation by Sex
+
+Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
+
+```{r disagg-sex}
+sdg_4_2_2_sex <- Pop_Children %>%
+  group_by(HL4) %>%
+  summarise(
+    Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
+  )
+
+```
+
+
+## Visualizing 
+
+A simple bar chat make the male–female gap immediately readable.
+
+```{r viz-sex}
+sdg_4_2_2_sex %>%
+  ggplot(aes(x = HL4, y = SDG_4_2_2, fill = HL4)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.5, size = 4.5) +
+  scale_fill_manual(values = c("#1a7abf", "#e05c2a")) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by Sex",
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+# 6. Disaggregation by Location 
+
+Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  
+
+```{r disagg-Area}
+sdg_4_2_2__location <- Pop_Children %>%
+  mutate(HH6_N = ifelse(HH6 == "URBAN", "Urban", "Rural"))%>%
+  group_by(HH6_N) %>%
+  summarise(
+    Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
+  ) 
+
+```
+
+
+## Visualizing 
+
+
+```{r viz-location}
+sdg_4_2_2__location %>%
+  ggplot(aes(x =HH6_N, y = SDG_4_2_2, fill = HH6_N)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.5, size = 4.5) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by location",
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+
+# 7. Disaggregation by Wealth levels
+
+Here we disaggregate the indicator following the wealth levels. We use the quintile of wealth available in the variable `windex5`
+
+```{r disagg-wealth}
+sdg_4_2_2_Wealth <- Pop_Children  %>%
+   mutate(windex5 = as_factor(windex5)) %>%  # windex5 should be a factor
+  group_by(windex5) %>%  
+  summarise(
+    Numerator = sum(hhweight * organized_learning, na.rm = TRUE),
+    Denominator = sum(hhweight, na.rm = TRUE),
+    SDG_4_2_2  = round(100 * Numerator / Denominator, 1)
+  )
+
+```
+
+
+```{r viz-wealth}
+sdg_4_2_2_Wealth %>%
+  ggplot(aes(x = windex5, y = SDG_4_2_2, fill = windex5)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = paste0(SDG_4_2_2, "%")),
+            vjust = -0.1, size = 4.5) +
+  scale_y_continuous(limits = c(0, 110), labels = scales::percent_format(scale = 1)) +
+  labs(
+    title    = "SDG 4.2.2 by Wealth levels (quintile)",
+    subtitle = paste(MyCountry, "- School Year", RefYear, "-", DataYear),
+    x = NULL, y = "Children in organized learning (%)"
+  ) +
+   coord_flip() +
+  theme_minimal(base_size = 13)
+```
+
+
+# 8. Export Results
+
+Both summary tables are saved as CSV files for further reporting or dissemination.
+
+```{r export}
+write_csv(sdg_4_2_2,     "../output/sdg_4_2_2_results.csv")
+write_csv(sdg_4_2_2_sex, "../output/sdg_4_2_2_results_by_sex.csv")
+write_csv(sdg_4_2_2__location, "../output/sdg_4_2_2_results_by_location.csv")
+write_csv(sdg_4_2_2_Wealth, "../output/sdg_4_2_2_results_by_wealth.csv")
+```
+
+
+
+```{r outputreport, eval=FALSE, include=FALSE}
+# Compiling manually to have the report produced in another directory
+# The name of the output file depends on "Country" and "year"
+# IMPORTANT:  This chunk needs to be manually computed when the report is ready
+
+# The name of the Country may have blanks, and comma, so let's change that: 
+ CountryName <-  MyCountry %>%
+   str_remove_all(",") %>%
+  str_remove_all(" ")
+
+# HTML version
+rmarkdown::render(
+  "Computing_SDG4_2_2.Rmd",
+  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".html"),
+  output_dir = "../Reports"
+)
+
+# Word version
+rmarkdown::render(
+  "Computing_SDG4_2_2.Rmd",
+  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".docx"),
+  output_dir = "../Reports"
+)
+
+```
+
+---
+*Report generated with R `r paste(R.version$major, R.version$minor, sep = ".")` · `r format(Sys.time(), "%Y-%m-%d %H:%M")`*
