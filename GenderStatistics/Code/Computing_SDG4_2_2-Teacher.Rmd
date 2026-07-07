@@ -7,15 +7,15 @@ author: |
    |
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  word_document:
-    toc: no
-  pdf_document:
-    toc: yes
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 ---
 
@@ -159,8 +159,18 @@ There are several step for computing the population of interest:
 
  - First, we exclude records with missing or invalid birth-month codes ( variable `HLM5` is   98, 99) 
  - Second, children who were **`r RefAge`** years old in September **`r RefYear `** were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**.
+ 
+We will use two  parameters- `Year_Start` and `Year_End` - to define the reference period  (specific to each country), in order to be able to use these references thoughout the document. This is a recommended practice to avoid errors and ensure reproducibility and traceability.   
 
-> We need to identify the variables that give us that information 
+```{r TargetYears, eval=TRUE}
+# let's define the reference schooling years for this Country/year
+
+Year_Start <-(RefYear-RefAge)-1 
+Year_End <- RefYear-RefAge
+```
+
+
+> We need to identify the variables that give us the relevant information for indentifying ( i.e. filtering) the target population:
 
 | Variable    | Description                                          |
 |-------------|------------------------------------------------------|
@@ -172,12 +182,6 @@ Now, we can define the target population.
 
 
 ```{r cohort-filter}
-
-# let's define the schooling period for this Country/year
-
-Year_Start <-(RefYear-RefAge)-1 
-Year_End <- RefYear-RefAge
-
 # Filter the observations to define the target population
 Pop_Children <- df %>%
   filter(     

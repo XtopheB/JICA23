@@ -80,7 +80,7 @@ pacman::p_load(
 The full questionnaire dataset (`hl.sav`) is imported into R using `read_sav()`.
 
 ```{r load-data}
-rawdf <- read_sav("../Data/hl.sav")
+rawdf <- read_sav(" TBC  ")
 ```
 
 
@@ -110,17 +110,17 @@ The indicator is constructed from a small set of variables
 
 
 ##  Variable selection
- > Let us select the variable of interest in a new, smaller data set with only the variables of interest. 
+ > Let us select the variable of interest in a new, smaller data set with only the variables of interest : HL4, HL5M, HL5Y, HL6, ED4, ED9, ED10A, HH6, windex5,and hhweight 
  
 
 ```{r select-vars}
 df <- rawdf %>%
-  select( HL4, HL5M, HL5Y, HL6, ED4, ED9, ED10A, HH6, windex5, hhweight)
+ TBC...
 
 
 ```
 
-We have now a new data set  `df` with still **91655** observations but only  **10** variables! Let us use some fancy package to get an overview of the values of these variables.  
+We have now a new data set  `df` with still **91655** observations but only  **10** variables! Let us use a fancy package `modelsummary` to get an overview of the values of these variables using the function `datasummary_skim()`.  
  
 ```{r Summary_all }
 # We can use the package modelsummary for a nice descriptive table  
@@ -141,10 +141,11 @@ df <- df %>%
          HH6 = as_factor(HH6))
 ```
 
+Again, we can use the same function `datasummary_skim()` for describing categorical variables:
 
 ```{r Summary_factor }
 # We can use the package modelsummary for a nice descriptive table  
-datasummary_skim(df ,type = "categorical" )
+datasummary_skim( TBC, ...     )
 ```
 
 ---
@@ -156,8 +157,20 @@ There are several step for computing the population of interest:
 
  - First, we exclude records with missing or invalid birth-month codes ( variable `HLM5` is   98, 99) 
  - Second, children who were **`r RefAge`** years old in September **`r RefYear `** were born between **October `r (RefYear-RefAge)-1`** and **September `r RefYear-RefAge`**.
+ 
+We will use two  parameters- `Year_Start` and `Year_End` - to define the reference period  (specific to each country), in order to be able to use these references thoughout the document. This is a recommended practice to avoid errors and ensure reproducibility and traceability.   
 
-> We need to identify the variables that give us that information 
+```{r TargetYears, eval=TRUE}
+# let's define the reference schooling years for this Country/year
+
+Year_Start <-(RefYear-RefAge)-1 
+Year_End <- RefYear-RefAge
+```
+
+ 
+ 
+
+> We need to identify the variables that give us the relevant information for indentifying ( i.e. filtering) the target population:
 
 | Variable    | Description                                          |
 |-------------|------------------------------------------------------|
@@ -166,27 +179,23 @@ There are several step for computing the population of interest:
 
 
 Now, we can define the target population. 
-```{r Target, eval=TRUE}
-# let's define the schooling period for this Country/year
-
-Year_Start <-(RefYear-RefAge)-1 
-Year_End <- RefYear-RefAge
-```
 
 
 ```{r cohort-filter}
 # Filter the observations to define the target population
 Pop_Children <- df %>%
   filter(     
-    # Remove missing/invalid birth dates
-    !is.na(HL5Y),
-    !is.na(HL5M),
-    !(HL5M %in% c(98, 99))
+    # Remove missing birth dates
+    TBC...
+    TBC....
+    
+    
+    !(HL5M %in% c(98, 99))   # <-- Remove invalid birth dates
     ) %>%
+  # Selecting the target cohort
   filter(    
-    # Selecting the target cohort
-    (HL5Y == Year_Start & HL5M >= 10) |
-      (HL5Y == Year_End & HL5M <= 9)
+    (HL5Y == Year_Start & HL5M >= 10) |  # 10 years old when school starts  OR
+    (HL5Y == Year_End & HL5M <= 9)       # 9 years old when school ends 
   )
 ```
 
@@ -211,10 +220,9 @@ Nb_InLearning <-  sum(Pop_Children$organized_learning, na.rm = TRUE)
 ```
 
 
-**Exercise:** Replace XXX and YYYY below withR code to have an automatioc count of the  values XXXX and YYYY. One may use `R code` in the text for that. 
+**Exercise:** Replace XXX and YYYY below with R code to have an automatic count of the  values XXXX and YYYY. (*One may use `R code` in the text as previously showed*). 
+
 > There are **XXXX** children in organized learning within **YYYY**  in the target cohort population. 
-
-
 
 ## National Estimate
 
@@ -223,8 +231,8 @@ The indicator is computed as a weighted proportion. Weights reflect the survey d
 ```{r national-estimate}
 sdg_4_2_2 <- Pop_Children %>%
   summarise(
-    Numerator   = sum(hhweight * organized_learning, na.rm = TRUE),
-    Denominator = sum(hhweight, na.rm = TRUE),
+    Numerator   = sum(  TBC    , na.rm = TRUE),
+    Denominator = sum( TBC     , na.rm = TRUE),
     SDG_4_2_2   = 100 * Numerator / Denominator
   )
 
@@ -236,7 +244,7 @@ sdg_4_2_2 <- Pop_Children %>%
 
 # 5. Disaggregation by Sex
 
-Here we disaggregate the indicator by sex (1 = Male, 2 = Female) to identify any gender gap in early childhood participation.
+Here we disaggregate the indicator by sex (*1 = Male, 2 = Female*) to identify any gender gap in early childhood participation.
 
 ```{r disagg-sex}
 sdg_4_2_2_sex <- Pop_Children %>%
@@ -273,7 +281,7 @@ sdg_4_2_2_sex %>%
 
 # 6. Disaggregation by Location 
 
-Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  
+Here we disaggregate the indicator by type of residence to identify any disparity in the location of households.  Since `HH6` has many categories, we will temporarily create a new variable `HH6_N` with values (Urban, Rural) and use it instead of `HH6`. 
 
 ```{r disagg-Area}
 sdg_4_2_2__location <- Pop_Children %>%
@@ -310,11 +318,11 @@ sdg_4_2_2__location %>%
 
 # 7. Disaggregation by Wealth levels
 
-Here we disaggregate the indicator following the wealth levels. We use the quintile of wealth available in the variable `windex5`
+Here we disaggregate the indicator following the wealth levels. We use the quintile of wealth available in the variable `windex5`. However, since that variable windex is not a factor, we need to change its type to `factor` to use it in our `group_by()`. 
 
 ```{r disagg-wealth}
 sdg_4_2_2_Wealth <- Pop_Children  %>%
-   mutate(windex5 = as_factor(windex5)) %>%  # windex5 should be a factor
+  mutate(windex5 = as_factor(windex5)) %>%  # windex5 should be a factor
   group_by(windex5) %>%  
   summarise(
     Numerator = sum(hhweight * organized_learning, na.rm = TRUE),
@@ -354,32 +362,6 @@ write_csv(sdg_4_2_2_Wealth, "../output/sdg_4_2_2_results_by_wealth.csv")
 ```
 
 
-
-```{r outputreport, eval=FALSE, include=FALSE}
-# Compiling manually to have the report produced in another directory
-# The name of the output file depends on "Country" and "year"
-# IMPORTANT:  This chunk needs to be manually computed when the report is ready
-
-# The name of the Country may have blanks, and comma, so let's change that: 
- CountryName <-  MyCountry %>%
-   str_remove_all(",") %>%
-  str_remove_all(" ")
-
-# HTML version
-rmarkdown::render(
-  "Computing_SDG4_2_2.Rmd",
-  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".html"),
-  output_dir = "../Reports"
-)
-
-# Word version
-rmarkdown::render(
-  "Computing_SDG4_2_2.Rmd",
-  output_file = paste0("Computing_SDG4_2_2_",CountryName,"-", DataYear,".docx"),
-  output_dir = "../Reports"
-)
-
-```
 
 ---
 *Report generated with R `r paste(R.version$major, R.version$minor, sep = ".")` · `r format(Sys.time(), "%Y-%m-%d %H:%M")`*
