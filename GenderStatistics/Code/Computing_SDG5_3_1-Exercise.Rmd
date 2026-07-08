@@ -1,10 +1,7 @@
 ---
 title: "Computing SDG 5.3.1 Using MICS Data in R"
 subtitle: '*A simple report*'
-author: |
-   | Sinovia Moonie and Christophe Bontemps,
-   | *Statistical Institute for Asia and the Pacific*
-   |
+author: "Your Name"
 date: "`r Sys.Date()`"
 output:
   pdf_document:
@@ -25,8 +22,8 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
-                       results =TRUE,
-                       eval =  FALSE
+                       results =TRUE
+                       
                        )
 
 ```
@@ -34,7 +31,7 @@ knitr::opts_chunk$set( message = FALSE,
 ```{r Country, eval=TRUE, include=FALSE}
 # Since we may want to use other data set from other countries/years
 # Let us define the Country and year as a parameter
-MyCountry <- "Lao"
+MyCountry <- "Lao PDR"
 DataYear <-  "2023"
 
 ```
@@ -69,14 +66,14 @@ The package `haven` is used to import SPSS files (`.sav`), while `tidyverse` pro
 
 ```{r packages}
 # We use pacman here 
-# install.packages("pacman")  # <-- Run only once
+#install.packages("pacman")  # <-- Run only once
 
 library(pacman)
 pacman::p_load(
   haven,
-  tidyverse,
   kableExtra, 
-  modelsummary
+  modelsummary,
+  tidyverse
 )
 ```
 
@@ -85,17 +82,17 @@ pacman::p_load(
 
 The full questionnaire dataset (`wm.sav`) is imported into R using `read_spss()`.
 
-```{r import}
+```{r import, eval = TRUE}
 #Create a data frame called df which stores the MICS data
 # This data set will change for a different Country
-rawdf <- read_spss(...)
+rawdf <- haven::read_spss("../Data/wm.sav")
 ```
 
-The raw data set has **22512 ** observations and  **476** variables. 
+The raw data set has ***`r nrow(rawdf)`*** observations and  **476** variables. 
 
 # 3. Explore the Dataset
 
-This dataset contains information collected from women interviewed during the survey. it has `r nrow(df)` observations and `r ncol(df)` variables 
+This dataset contains information collected from women interviewed during the survey. it has `r nrow(rawdf)` observations and `r ncol(rawdf)` variables 
 
 
 Although the dataset contains many variables, we only need a few for this computation:
@@ -115,7 +112,7 @@ Although the dataset contains many variables, we only need a few for this comput
  
 ```{r subset}
 df <- rawdf %>%
-  select()
+  select("WM17", "WB4", "WAGEM", "HH6","wmweight")
 
 ```
 
@@ -154,7 +151,6 @@ df <- df %>%
 
 ```{r type}
 df %>% 
-  select(WB4, WAGEM) %>% 
   map(class)
 ```
 
@@ -175,7 +171,7 @@ str(df$WM17)
 ```
 
 
-```{r taleInterview}
+```{r tableInterview}
 table(df$WM17)
 ```
 
@@ -313,14 +309,18 @@ SDG 5.3.1 is calculated for women aged **20–24 years** who completed the inter
 
 ```{r subset20_24}
 wm_20_24 <- df %>%
- ...,
- .... ,
+ filter(
+   WB4 >= 20 &   # age greater or equal 20
+    WB4 <= 24 &  #  age  lower or equal 24 
+     WM17 ==1    # Completed interview
+     
+ )
   
   
   
 ```
 
-We can compute the number of women included in the analysis, now only **3317** women.
+We can compute the number of women included in the analysis, now only **XXXX** women.
 
 
 
@@ -349,6 +349,9 @@ The result can be summarized in this table, where we compute the numerator, the 
 sdg_5_3_1 <- wm_20_24 %>%
   summarise(
     
+    denominator = sum(wmweight , na.rm = TRUE),
+    numerator = sum(wmweight[WAGEM < 18], na.rm = TRUE),
+    indicator = 100 * numerator/denominator
     
   ) 
  
@@ -369,7 +372,7 @@ Here we calculate SDG 5.3.1 separately for urban and rural areas. This is done e
 ```{r}
 sdg_5_3_1_location <- wm_20_24 %>%
   filter(HH6 != "Unknown") %>%
-  group_by( .... ) %>%
+  group_by( HH6 ) %>%
   summarise(
     denominator = sum(wmweight, na.rm = TRUE),
     numerator   = sum(wmweight[WAGEM < 18], na.rm = TRUE),
@@ -410,15 +413,15 @@ ggplot()+
 
 The final results are saved as a CSV file, exported directly to the *output* directory.
 
-```{r}
+```{r }
 results <- sdg_5_3_1 %>%
   mutate(across(where(is.numeric), round, 2)) %>%  # Only 2 digits
   mutate(
     country = MyCountry,
     year = DataYear,
     unit = "Percent"
-  ) %>%
-  relocate(indicator, country, year, numerator, denominator, SDG_5_3_1, unit)
+    ) %>%  # Order the columns...
+ relocate(country, year, numerator, denominator,indicator, unit)
 
 # The name of the output file depends on "Country" and "year"
 write_csv(results, paste0("../Output/SDG_5_3_1_report_",MyCountry,"-", DataYear,".csv"))

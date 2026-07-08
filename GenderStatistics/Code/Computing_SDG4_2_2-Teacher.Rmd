@@ -9,13 +9,13 @@ date: "`r Sys.Date()`"
 output:
   pdf_document:
     toc: yes
-  word_document:
-    toc: no
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
+  word_document:
+    toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 ---
 
@@ -25,7 +25,8 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
                        results = TRUE,
-                       echo = knitr::is_html_output() # Code only in html!
+                       echo = TRUE
+                       # echo = knitr::is_html_output() # Code will be only in html!
                        )
 
 ```
@@ -33,7 +34,7 @@ knitr::opts_chunk$set( message = FALSE,
 ```{r Country}
 # Since we may want to use other data set from other countries/years
 # Let us define the Country and year as a parameter
-MyCountry <- "Lao"
+MyCountry <- "Lao PDR"
 DataYear <- 2023
 # Years taken into account for the definition of the indicator
 RefYear <-  DataYear -1 # The last school year recorded
@@ -231,6 +232,8 @@ sdg_4_2_2 <- Pop_Children %>%
     SDG_4_2_2   = 100 * Numerator / Denominator
   )
 
+kable(sdg_4_2_2, 
+      digit = 1)
 # print(sdg_4_2_2)
 ```
 
@@ -250,6 +253,7 @@ sdg_4_2_2_sex <- Pop_Children %>%
     SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
   )
 
+kable(sdg_4_2_2_sex)
 ```
 
 
@@ -287,7 +291,7 @@ sdg_4_2_2__location <- Pop_Children %>%
     Denominator = sum(hhweight, na.rm = TRUE),
     SDG_4_2_2   = round(100 * Numerator / Denominator, 1)
   ) 
-
+ kable(sdg_4_2_2__location)
 ```
 
 

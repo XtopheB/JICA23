@@ -7,13 +7,13 @@ author: |
    |
 date: "`r Sys.Date()`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float: true
     code_folding: hide
     code_download: true
-  pdf_document:
-    toc: yes
   word_document:
     toc: no
 always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
@@ -25,8 +25,9 @@ always_allow_html: true  # <-- bypass errors caused by interactive HTML (if any)
 
 knitr::opts_chunk$set( message = FALSE,
                        warning = FALSE,
-                       results =TRUE,
-                       echo = knitr::is_html_output() # Code only in html!
+                       results = TRUE,
+                       echo  = TRUE
+                       # echo = knitr::is_html_output() # Code only in html!
                        )
 
 ```
@@ -34,7 +35,7 @@ knitr::opts_chunk$set( message = FALSE,
 ```{r Country}
 # Since we may want to use other data set from other countries/years
 # Let us define the Country and year as a parameter
-MyCountry <- "Lao"
+MyCountry <- "Lao PDR"
 DataYear <-  "2023"
 
 ```
