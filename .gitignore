@@ -9,9 +9,7 @@
 *.zip
 *.sav
 
-
-.RDataTmp
-.Ruserdata
+# specific files
 *-Ex.R
 
 # Directories
@@ -69,9 +67,9 @@ docs/
 # Output files from R CMD check
 /*.Rcheck/
 
-
 # translation temp files
 po/*~
+
 # RStudio Connect folder
 rsconnect/
 RawData/TPer_Vic2.dbf
