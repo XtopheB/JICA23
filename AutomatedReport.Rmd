@@ -1,6 +1,6 @@
 ---
-title: "A Fully Automated Report- revised during the class"
-subtitle: "TAPOS" 
+title: "A Simple Automated Report"
+subtitle: "Trade Statistics" 
 author: "Christophe Bontemps"
 date: "`r format(Sys.time(), '%A, %d %B %Y, %H:%M')`"
 output:
@@ -19,7 +19,7 @@ output:
 ```{r, include=FALSE}
 # Select one product for the detailed analysis
 # Other options: "Wood", "Coffee", "Alcoholic Drinks"
-Mygood <- "Wood"  
+Mygood <- "Coffee"  
 
 ```
 
@@ -62,9 +62,9 @@ This is a report using **Rmarkdown** with a very simple structure.
 ```
 
 ## Raw Data Analysis - all products 
-I have **here  `r  nrow(Mydata)`  observations**
+I have here  **`r  nrow(Mydata)`**  observations
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 nrow(Mydata)
 ```
 

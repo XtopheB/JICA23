@@ -4,22 +4,22 @@ author: Christophe Bontemps (SIAP)^[Based on data and information from Vanuatu N
   Statistical Office (VNSO) ]
 subtitle: '*A toy model!*'
 output:
-  html_document:
-    df_print: paged
-    always_allow_html: true
-    toc: yes
-    keep_md: yes
-    code_folding: hide
-    code_download: true
-    fig_width: 6.5
-    fig_height: 4
+  word_document: default
   pdf_document:
     df_print: kable
     toc: no
     keep_tex: yes
     fig_width: 6.5
     fig_height: 4
-  word_document: default
+  html_document:
+    df_print: paged
+    always_allow_html: true
+    toc: yes
+    keep_md: no
+    code_folding: hide
+    code_download: true
+    fig_width: 6.5
+    fig_height: 4
 ---
 
 
@@ -104,13 +104,14 @@ processedTradeStats <- tradeStatsCommodities
 ```
 
 ```{r, eval=TRUE}
+processedTradeStats <- processedTradeStats %>%
+  relocate(Year, IMPORT.COUNTRY, IMPORT.REGION, Type, Principle.Exports)
+
 head(processedTradeStats)
 ```
 
 
-### Addition to the original file
 
-The dates and year are missing, so we'll generate the year to have some variabilty
 ```{r}
 set.seed(2512)
  processedTradeStats  <- processedTradeStats %>%
@@ -119,10 +120,6 @@ set.seed(2512)
 
 ```
 
-
-
-
-In the original file, there are no **stat.values** but for the sake of the exercise we'll generated some. 
 
 ```{r}
 ## Parameteres
@@ -140,20 +137,16 @@ beta3 <-10
 
 ```
 
-In a classical linear model,
-$$
- stat.value  =  \beta_1 * Var1 +  \beta_2 * Var_2 +  \beta_3 * Var_3 + \epsilon
-$$
 
-The *stats.value* was generated with the following parameters $\beta_1$ = `r beta2` and  $\beta_2$ = `r beta3`, wich leads to:  
 
-$$
- stat.value  =  `r beta1` * CP4 + `r beta2` * 1_[export region] + `r beta3` * 1_[export country] + \epsilon
-$$
 
 # Statistics
 Now let's look at our constructed data set and start exploring: 
 ```{r, eval=FALSE}
+processedTradeStats <- processedTradeStats %>%
+  arrange(Year, IMPORT.COUNTRY, IMPORT.REGION, Type, Principle.Exports, Stat..Value)
+
+head(processedTradeStats)
 head(processedTradeStats)
 ```
 ... and let's have some **descriptive statistics**
