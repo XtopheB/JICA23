@@ -22,7 +22,7 @@ always_allow_html: true  # to by-pass issue with Word and tables
 ```{r, include=FALSE}
 # Select one product for the detailed analysis
 # Other options: "Wood", "Coffee", "Alcoholic Drinks"
-Mygood <- "Alcoholic Drinks"  
+Mygood <- "Wood"  
 
 ```
 
