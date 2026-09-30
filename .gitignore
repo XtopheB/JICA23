@@ -74,3 +74,5 @@ po/*~
 rsconnect/
 RawData/TPer_Vic2.dbf
 
+# Apps
+/Apps/ParallelPlotApp/
