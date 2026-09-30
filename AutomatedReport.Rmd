@@ -10,16 +10,19 @@ output:
     code_download: true 
     toc_float: true
     df_print: paged
+  word_document:
+    word_document:
+    toc: true
+    number_sections: true
   pdf_document:
     toc: no
-  word_document:
-    toc: yes
+always_allow_html: true  # to by-pass issue with Word and tables
 ---
 
 ```{r, include=FALSE}
 # Select one product for the detailed analysis
 # Other options: "Wood", "Coffee", "Alcoholic Drinks"
-Mygood <- "Coffee"  
+Mygood <- "Alcoholic Drinks"  
 
 ```
 
