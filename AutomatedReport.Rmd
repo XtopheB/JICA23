@@ -1,7 +1,7 @@
 ---
 title: "A Simple Automated Report"
 subtitle: "Trade Statistics" 
-author: "Christophe Bontemps"
+author: "Christophe Bontemps (SIAP)"
 date: "`r format(Sys.time(), '%A, %d %B %Y, %H:%M')`"
 output:
   html_document:
@@ -56,8 +56,8 @@ This is a report using **Rmarkdown** with a very simple structure.
 ```{r TradeDataLoading}
 # We can use the data locally or from SIAP server
 
-# Mydata <- read.csv("Data/TradeData.csv")
- Mydata <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
+Mydata <- read.csv("Data/TradeData.csv")
+# Mydata <- read.csv("https://www.unsiap.or.jp/on_line/2024/RAP/Data/TradeData.csv")
 
 ```
 
